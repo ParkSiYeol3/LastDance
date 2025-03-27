@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h2>회원가입</h2>
+    <input type="text" id="signup-name" placeholder="이름">
+    <input type="email" id="signup-email" placeholder="이메일">
+    <input type="password" id="signup-password" placeholder="비밀번호">
+    <input type="text" id="signup-zipcode" placeholder="우편번호">
+    <input type="text" id="signup-address" placeholder="상세주소">
+    <button id="signup-btn">회원가입</button>
+    <a href="index.html">메인으로</a>
+
+    <!-- Firebase SDK 추가 -->
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/auth.js"></script>
+</body>
+
+</html>

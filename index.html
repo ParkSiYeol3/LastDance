@@ -2,18 +2,29 @@
 <html lang="ko">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>물건 대여 서비스</title>
-    <script src="https://cdn.jsdelivr.net/npm/react@17.0.2/umd/react.production.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@17.0.2/umd/react-dom.production.min.js"></script>
-    <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>패션 아이템 대여</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div id="root"></div>
+    <header>
+        <h1>패션 아이템 대여</h1>
+        <nav>
+            <a href="login.html">로그인</a>
+            <a href="signup.html">회원가입</a>
+        </nav>
+    </header>
 
-    <script src="app.js"></script>
+    <section>
+        <h2>대여 가능한 아이템</h2>
+        <ul id="item-list"></ul>
+    </section>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/items.js"></script>
+    <script src="js/main.js"></script>
 </body>
 
 </html>
