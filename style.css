@@ -1,0 +1,82 @@
+/* styles.css */
+
+/* 전체 레이아웃 */
+body {
+	font-family: 'Arial', sans-serif;
+	margin: 0;
+	padding: 0;
+	background-color: #f4f4f9;
+	color: #333;
+}
+
+h1 {
+	text-align: center;
+	color: #2c3e50;
+}
+
+.container {
+	width: 80%;
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 20px;
+	background-color: white;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	border-radius: 10px;
+	margin-top: 20px;
+}
+
+/* 폼 스타일 */
+input,
+textarea,
+button {
+	width: 100%;
+	padding: 10px;
+	margin: 10px 0;
+	border-radius: 5px;
+	border: 1px solid #ddd;
+}
+
+input:focus,
+textarea:focus {
+	outline: none;
+	border-color: #3498db;
+}
+
+button {
+	background-color: #3498db;
+	color: white;
+	border: none;
+	cursor: pointer;
+}
+
+button:hover {
+	background-color: #2980b9;
+}
+
+/* 에러 메시지 스타일 */
+p {
+	color: red;
+	font-size: 14px;
+}
+
+/* 리스트 스타일 */
+ul {
+	list-style: none;
+	padding: 0;
+}
+
+ul li {
+	border-bottom: 1px solid #ddd;
+	padding: 10px 0;
+}
+
+ul li h3 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: bold;
+}
+
+ul li p {
+	margin: 5px 0;
+	font-size: 14px;
+}
