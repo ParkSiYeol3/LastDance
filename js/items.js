@@ -19,7 +19,7 @@ document.getElementById('add-item-btn').addEventListener('click', function () {
 		return;
 	}
 	if (!/^[a-zA-Z0-9 ]+$/.test(itemName) || !/^[a-zA-Z0-9\s.,!?]+$/.test(itemDescription)) {
-		alert('아이템 이름, 설명은 영문, ��자, 공��, 특수문자(!@#$%^&*()-_=+[{]};:,.<>/?)만 입력하세요!');
+		alert('아이템 이름, 설명은 영문, 숫자, 공, 특수문자(!@#$%^&*()-_=+[{]};:,.<>/?)만 입력하세요!');
 		return;
 	}
 
