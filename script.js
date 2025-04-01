@@ -1,3 +1,7 @@
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getFirestore, collection, addDoc, setDoc, doc, getDocs, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+
 // Firebase 설정
 const firebaseConfig = {
 	apiKey: 'AIzaSyDO4Ob4MXJn2dNw87zlfygBKUf87hzo_9U',
@@ -9,9 +13,9 @@ const firebaseConfig = {
 	measurementId: 'G-3BSQKRSBMN',
 };
 // Firebase 초기화
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // 회원가입 기능
 document.getElementById('signup-btn').addEventListener('click', function () {

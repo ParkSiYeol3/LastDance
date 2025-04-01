@@ -4,6 +4,25 @@ document.getElementById('add-item-btn').addEventListener('click', function () {
 	const itemDescription = document.getElementById('item-description').value;
 	const user = auth.currentUser;
 
+	document.addEventListener('DOMContentLoaded', function () {
+		document.getElementById('some-button').addEventListener('click', function () {
+			console.log('버튼 클릭됨!');
+		});
+	});
+
+	if (!itemName || !itemDescription) {
+		alert('아이템 이름, 설명을 입력하세요!');
+		return;
+	}
+	if (itemName.length < 3 || itemDescription.length < 10) {
+		alert('아이템 이름, 설명은 3��자 이상, 10��자 이상으로 입력하세요!');
+		return;
+	}
+	if (!/^[a-zA-Z0-9 ]+$/.test(itemName) || !/^[a-zA-Z0-9\s.,!?]+$/.test(itemDescription)) {
+		alert('아이템 이름, 설명은 영문, ��자, 공��, 특수문자(!@#$%^&*()-_=+[{]};:,.<>/?)만 입력하세요!');
+		return;
+	}
+
 	if (user) {
 		db.collection('items')
 			.add({

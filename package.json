@@ -1,0 +1,25 @@
+{
+  "name": "lastdance",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "script.js",
+  "scripts": {
+    "start": "node script.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hohongdu/LastDance.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Hohongdu/LastDance/issues"
+  },
+  "homepage": "https://github.com/Hohongdu/LastDance#readme",
+  "description": "",
+  "dependencies": {
+    "firebase": "^11.5.0"
+  }
+}
