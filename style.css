@@ -1,33 +1,159 @@
+/* style.css - 깔끔하고 현대적인 테마 스타일 */
+
+/* ------------------------ 기본 설정 ------------------------ */
 body {
-	font-family: Arial, sans-serif;
-	text-align: center;
-	margin: 20px;
+	font-family: 'Pretendard', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	margin: 0;
+	padding: 0;
+	background-color: #f9fafb;
+	color: #333;
+	line-height: 1.6;
 }
 
+/* ------------------------ 헤더 ------------------------ */
 header {
+	background-color: #2563eb;
+	color: white;
+	padding: 1rem 2rem;
 	display: flex;
 	justify-content: space-between;
-	padding: 10px 20px;
-	background: #333;
-	color: white;
+	align-items: center;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+	flex-wrap: wrap;
 }
 
-nav a {
+header h1 a {
 	color: white;
-	margin: 0 10px;
 	text-decoration: none;
+	font-size: 1.5rem;
+	font-weight: bold;
 }
 
-input {
-	display: block;
-	margin: 10px auto;
-	padding: 8px;
-	width: 80%;
-	max-width: 300px;
+nav {
+	display: flex;
+	gap: 1rem;
+	align-items: center;
 }
 
-button {
-	margin: 10px;
-	padding: 10px;
+nav a,
+nav button {
+	color: white;
+	background: none;
+	border: none;
+	font-size: 1rem;
 	cursor: pointer;
+	text-decoration: none;
+	transition: opacity 0.2s ease;
+}
+
+nav a:hover,
+nav button:hover {
+	opacity: 0.8;
+}
+
+/* ------------------------ 메인 ------------------------ */
+main {
+	padding: 2rem;
+	max-width: 960px;
+	margin: 0 auto;
+}
+
+h2 {
+	color: #1f2937;
+	margin-bottom: 1rem;
+}
+
+/* ------------------------ 아이템 카드 ------------------------ */
+.item-card {
+	background-color: #ffffff;
+	border-radius: 12px;
+	padding: 1.5rem;
+	margin-bottom: 2rem;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.item-card:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
+}
+
+.item-card h3 {
+	margin-top: 0;
+	font-size: 1.25rem;
+	color: #111827;
+}
+
+.item-card p {
+	margin: 0.5rem 0;
+	color: #4b5563;
+}
+
+.item-card img {
+	width: 100%;
+	max-width: 360px;
+	height: 240px;
+	object-fit: cover;
+	border-radius: 8px;
+	margin-top: 0.75rem;
+	display: block;
+}
+
+/* ------------------------ 폼 ------------------------ */
+form input,
+form textarea,
+form button {
+	display: block;
+	margin-bottom: 1rem;
+	padding: 0.75rem;
+	width: 100%;
+	max-width: 500px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	font-size: 1rem;
+	box-sizing: border-box;
+}
+
+form input:focus,
+form textarea:focus {
+	outline: none;
+	border-color: #2563eb;
+	box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+form textarea {
+	min-height: 120px;
+	resize: vertical;
+}
+
+form button {
+	background-color: #2563eb;
+	color: white;
+	font-weight: 600;
+	transition: background-color 0.3s ease;
+	border: none;
+	cursor: pointer;
+}
+
+form button:hover {
+	background-color: #1e40af;
+}
+
+/* ------------------------ 반응형 ------------------------ */
+@media (max-width: 600px) {
+	header,
+	nav {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+
+	main {
+		padding: 1rem;
+	}
+
+	.item-card img {
+		max-width: 100%;
+		height: auto;
+	}
 }

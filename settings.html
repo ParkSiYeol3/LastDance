@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>설정</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div id="header-container"></div>
+
+    <main>
+        <h2>계정 설정</h2>
+        <button id="change-password-btn">비밀번호 변경</button>
+        <button id="logout-btn">로그아웃</button>
+        <button id="delete-account-btn">계정 삭제</button>
+    </main>
+
+    <script type="module" src="./js/firebase-config.js"></script>
+    <script type="module" src="./js/settings.js"></script>
+    <script type="module">
+        import { loadHeader } from './js/header-loader.js';
+        loadHeader();
+    </script>
+
+</body>
+
+</html>

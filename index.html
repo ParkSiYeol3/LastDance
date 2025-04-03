@@ -2,31 +2,36 @@
 <html lang="ko">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>패션 아이템 대여</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>패션 아이템 대여 플랫폼</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-    <header>
-        <h1>패션 아이템 대여</h1>
-        <nav>
-            <a href="login.html">로그인</a>
-            <a href="signup.html">회원가입</a>
-        </nav>
-    </header>
+    <!-- 공통 헤더 삽입 -->
+    <div id="header-container"></div>
 
-    <section>
-        <h2>대여 가능한 아이템</h2>
-        <ul id="item-list"></ul>
-    </section>
+    <main>
+        <!-- Firestore에서 불러온 아이템 목록 영역 -->
+        <section>
+            <h2>대여 가능한 상품 목록</h2>
+            <div id="item-list" class="item-list"></div>
+        </section>
 
+        <!-- 상품 등록 버튼 (로그인 필요) -->
+        <section>
+            <button id="add-product-btn">상품 등록하기</button>
+        </section>
+    </main>
+
+    <!-- Firebase 및 index.js 로드 -->
     <script type="module" src="./js/firebase-config.js"></script>
-    <script type="module" src="./js/auth.js"></script>
-
-    <script src="js/items.js"></script>
-    <script src="js/main.js"></script>
+    <script type="module" src="./js/index.js"></script>
+    <script type="module">
+        import { loadHeader } from './js/header-loader.js';
+        loadHeader();
+    </script>
 </body>
 
 </html>

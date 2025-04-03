@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>전체 상품 보기</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div id="header-container"></div>
+
+
+    <main>
+        <h2>전체 상품 목록</h2>
+        <div id="product-list"></div>
+    </main>
+
+    <script type="module" src="./js/firebase-config.js"></script>
+    <script type="module" src="./js/products.js"></script>
+
+    <script type="module">
+        import { loadHeader } from './js/header-loader.js';
+        loadHeader();
+    </script>
+</body>
+
+</html>
