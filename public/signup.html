@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>회원가입</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div id="header-container"></div>
+
+    <main>
+        <h2>회원가입</h2>
+        <form id="signup-form">
+            <input type="text" id="signup-name" placeholder="이름" required />
+            <input type="email" id="signup-email" placeholder="이메일" required />
+            <input type="password" id="signup-password" placeholder="비밀번호" required />
+            <input type="text" id="signup-zipcode" placeholder="우편번호" required />
+            <input type="text" id="signup-address" placeholder="주소" required />
+            <button type="submit" id="signup-btn">가입하기</button>
+            <p>이미 계정이 있으신가요? <a href="login.html">로그인</a></p>
+        </form>
+    </main>
+
+    <script type="module" src="./js/firebase-config.js"></script>
+    <script type="module" src="./js/auth.js"></script>
+    <script type="module">
+        import { loadHeader } from './js/header-loader.js';
+        loadHeader();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>채팅</title>
+    <link rel="stylesheet" href="style.css" />
+
+
+
+</head>
+
+<body>
+    <div id="header-container"></div>
+    <main>
+        <div id="chat-box" style="height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;"></div>
+        <input type="text" id="chat-input" placeholder="메시지를 입력하세요" />
+        <button id="send-btn">보내기</button>
+    </main>
+
+    <script type="module" src="./js/firebase-config.js"></script>
+    <script type="module" src="./js/chat.js"></script>
+    <script type="module">
+        import { loadHeader } from './js/header-loader.js';
+        loadHeader();
+    </script>
+</body>
+
+</html>

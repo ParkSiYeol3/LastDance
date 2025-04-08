@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>아이템 상세</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div id="header-container"></div>
+
+    <main>
+        <h2>아이템 상세 정보</h2>
+        <div id="item-detail"></div>
+        <button id="rental-request-btn" style="display: none">대여 요청</button>
+        <a href="index.html">메인으로</a>
+
+    </main>
+
+    <script type="module" src="./js/firebase-config.js"></script>
+    <script type="module" src="./js/item-detail.js"></script>
+    <script type="module">
+        import { loadHeader } from './js/header-loader.js';
+        loadHeader();
+    </script>
+</body>
+
+</html>
