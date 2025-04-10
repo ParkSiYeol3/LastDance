@@ -32,36 +32,41 @@ exports.startChat = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-// 메시지 전송
+// 💬 메시지 전송 (roomId or chatRoomId 모두 허용)
 exports.sendMessage = async (req, res) => {
-  const { chatRoomId, senderId, text } = req.body;
-
-  if (!chatRoomId || !senderId || !text) {
-    return res.status(400).json({ error: 'chatRoomId, senderId, text는 필수입니다.' });
-  }
-
-  try {
-    const messageData = {
-      senderId,
-      text,
-      sentAt: new Date()
-    };
-
-    // 메시지 저장
-    await db.collection('messages').doc(chatRoomId).collection('chat').add(messageData);
-
-    // 마지막 메시지 업데이트
-    await db.collection('chatRooms').doc(chatRoomId).update({
-      lastMessage: text,
-    });
-
-    res.json({ message: '메시지 전송 성공' });
-  } catch (err) {
-    console.error('❌ 메시지 전송 오류:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
+    const { text, senderId, chatRoomId, roomId } = req.body;
+    const resolvedRoomId = chatRoomId || roomId;
+  
+    if (!text || !senderId || !resolvedRoomId) {
+      return res.status(400).json({ error: 'text, senderId, roomId(chatRoomId) 가 필요합니다.' });
+    }
+  
+    try {
+      const messageData = {
+        senderId,
+        text,
+        sentAt: new Date(),
+      };
+  
+      // ✅ 메시지 저장
+      await db.collection('messages')
+        .doc(resolvedRoomId)
+        .collection('chat')
+        .add(messageData);
+  
+      // ✅ 마지막 메시지 업데이트
+      await db.collection('chatRooms')
+        .doc(resolvedRoomId)
+        .update({
+          lastMessage: text,
+        });
+  
+      res.json({ message: '메시지 저장 성공' });
+    } catch (err) {
+      console.error('❌ 메시지 저장 오류:', err);
+      res.status(500).json({ error: '메시지 저장 실패' });
+    }
+  };
 
 // 나의 채팅방 목록 조회
 exports.getUserChatRooms = async (req, res) => {
@@ -88,32 +93,31 @@ exports.getUserChatRooms = async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   };
-
-// 채팅 메시지 저장 
-exports.sendMessage = async (req, res) => {
-    const { text } = req.body;
-    const senderId = req.user?.uid;
+  
+  // 📄 채팅 메시지 조회
+exports.getMessages = async (req, res) => {
     const { roomId } = req.params;
   
-    if (!text || !senderId || !roomId) {
-      return res.status(400).json({ error: 'text, senderId, roomId가 필요합니다.' });
+    if (!roomId) {
+      return res.status(400).json({ error: 'roomId가 필요합니다.' });
     }
   
     try {
-      await db.collection('chatRooms')
+      const messagesSnapshot = await db
+        .collection('chatRooms')
         .doc(roomId)
         .collection('messages')
-        .add({
-          senderId,
-          text,
-          timestamp: new Date(),
-        });
+        .orderBy('createdAt', 'asc')
+        .get();
   
-      res.json({ message: '메시지 저장 성공' });
+      const messages = messagesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+  
+      res.json({ messages });
     } catch (err) {
-      console.error('❌ 메시지 저장 오류:', err);
-      res.status(500).json({ error: err.message });
+      console.error('❌ 메시지 조회 오류:', err.message);
+      res.status(500).json({ error: '메시지를 가져오지 못했습니다.' });
     }
   };
-  
-  
