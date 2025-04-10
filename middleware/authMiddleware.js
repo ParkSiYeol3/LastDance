@@ -1,4 +1,4 @@
-const admin = require('../firebase/admin');
+const { admin } = require('../firebase/admin');
 
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -9,8 +9,7 @@ const authMiddleware = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = await admin.auth().verifyIdToken(token); // Firebase UID 검증
-    console.log('🔥 인증된 UID:', decoded.uid); // ← 여기 추가
+    const decoded = await admin.auth().verifyIdToken(token); 
     req.user = { uid: decoded.uid };
     next();
   } catch (error) {

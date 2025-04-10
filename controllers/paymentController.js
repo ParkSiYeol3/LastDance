@@ -97,8 +97,8 @@ exports.getUserPayments = async (req, res) => {
 };
 // 자동 반환 
 exports.autoRefundByItem = async (req, res) => {
-  const { userId, rentalItemId } = req.body;
-//const userId = req.user?.uid;   //firebase 인증 토큰에서 UID 가져오기(프론트디자인 끝나면 적용) // auth 토큰 가져와야함 //자동 uid  위함 
+  const { rentalItemId } = req.body;
+  //const userId = req.user?.uid;   //firebase 인증 토큰에서 UID 가져오기(프론트디자인 끝나면 적용) // auth 토큰 가져와야함 //자동 uid  위함 
 
   if (!userId || !rentalItemId) {
     return res.status(400).json({ error: 'userId와 rentalItemId가 필요합니다.' });
