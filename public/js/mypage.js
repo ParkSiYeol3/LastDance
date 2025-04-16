@@ -4,8 +4,12 @@ import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy } fr
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js';
 
 const myItemsContainer = document.getElementById('my-items');
+const addItemBtn = document.getElementById('mypage-add-btn');
+
+let currentUser = null;
 
 onAuthStateChanged(auth, async (user) => {
+	currentUser = user;
 	if (!user) {
 		alert('로그인 후 이용해 주세요.');
 		window.location.href = 'login.html';
@@ -16,6 +20,17 @@ onAuthStateChanged(auth, async (user) => {
 	await loadRentalRequests(user.uid);
 });
 
+if (addItemBtn) {
+	addItemBtn.addEventListener('click', () => {
+		if (!currentUser) {
+			alert('상품 등록은 로그인 후 이용 가능합니다.');
+			window.location.href = 'login.html';
+		} else {
+			window.location.href = 'add-item.html';
+		}
+	});
+}
+
 async function loadMyItems(userId) {
 	const q = query(collection(db, 'items'), where('userId', '==', userId), orderBy('timestamp', 'desc'));
 	const snapshot = await getDocs(q);
@@ -25,6 +40,10 @@ async function loadMyItems(userId) {
 		const item = docSnap.data();
 		const div = document.createElement('div');
 		div.className = 'my-item-card';
+		div.style.cursor = 'pointer';
+		div.addEventListener('click', () => {
+			window.location.href = `item-detail.html?id=${docSnap.id}`;
+		});
 
 		div.innerHTML = `
       <h3>${item.name}</h3>
@@ -55,13 +74,26 @@ async function loadRentalRequests(userId) {
 		const itemSnap = await getDoc(doc(db, 'items', request.itemId));
 		const item = itemSnap.exists() ? itemSnap.data() : { name: '알 수 없음', description: '' };
 
+		let requesterName = request.requesterId;
+		try {
+			const userSnap = await getDoc(doc(db, 'users', request.requesterId));
+			if (userSnap.exists()) {
+				const userData = userSnap.data();
+				requesterName = userData.name || request.requesterId;
+			}
+		} catch (err) {
+			console.warn('요청자 정보 조회 실패:', err);
+		}
+
+		const statusKor = request.status === 'pending' ? '대기중' : request.status === 'accepted' ? '수락됨' : request.status === 'rejected' ? '거절됨' : request.status;
+
 		const card = document.createElement('div');
 		card.className = 'item-card';
 		card.innerHTML = `
       <h3>${item.name}</h3>
       <p>${item.description}</p>
-      <p><strong>요청자 ID:</strong> ${request.requesterId}</p>
-      <p><strong>상태:</strong> ${request.status}</p>
+      <p><strong>요청자:</strong> ${requesterName}</p>
+      <p><strong>상태:</strong> ${statusKor}</p>
     `;
 
 		if (request.status === 'pending') {
