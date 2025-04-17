@@ -124,27 +124,20 @@ exports.getMessages = async (req, res) => {
   };
 
   exports.markMessageAsRead = async (req, res) => {
-    const { roomId, messageId } = req.params;
-    const userId = req.user?.uid;
-  
-    if (!userId || !roomId || !messageId) {
-      return res.status(400).json({ error: 'userId, roomId, messageId가 필요합니다.' });
-    }
+    const { roomId, messageId } = req.body;
   
     try {
-      const messageRef = db
-        .collection('messages')
+      await db.collection('chatRooms')           // ✅ 수정 포인트
         .doc(roomId)
-        .collection('chat')
-        .doc(messageId);
-  
-      await messageRef.update({
-        readBy: admin.firestore.FieldValue.arrayUnion(userId)
-      });
+        .collection('messages')
+        .doc(messageId)
+        .update({
+          isRead: true
+        });
   
       res.json({ message: '읽음 처리 완료' });
     } catch (err) {
-      console.error('❌ 읽음 처리 실패:', err.message);
-      res.status(500).json({ error: '읽음 처리 중 오류' });
+      console.error('❌ 읽음 처리 실패:', err);
+      res.status(500).json({ error: '읽음 처리 실패' });
     }
   };
