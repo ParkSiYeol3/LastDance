@@ -1,4 +1,4 @@
-const { db } = require('../firebase/admin');
+const { admin, db } = require('../firebase/admin');
 const { v4: uuidv4 } = require('uuid');
 
 // 채팅방 생성 또는 기존 채팅방 반환
@@ -34,39 +34,40 @@ exports.startChat = async (req, res) => {
 };
 // 💬 메시지 전송 (roomId or chatRoomId 모두 허용)
 exports.sendMessage = async (req, res) => {
-    const { text, senderId, chatRoomId, roomId } = req.body;
-    const resolvedRoomId = chatRoomId || roomId;
-  
-    if (!text || !senderId || !resolvedRoomId) {
-      return res.status(400).json({ error: 'text, senderId, roomId(chatRoomId) 가 필요합니다.' });
-    }
-  
-    try {
-      const messageData = {
-        senderId,
-        text,
-        sentAt: new Date(),
-      };
-  
-      // ✅ 메시지 저장
-      await db.collection('messages')
-        .doc(resolvedRoomId)
-        .collection('chat')
-        .add(messageData);
-  
-      // ✅ 마지막 메시지 업데이트
-      await db.collection('chatRooms')
-        .doc(resolvedRoomId)
-        .update({
-          lastMessage: text,
-        });
-  
-      res.json({ message: '메시지 저장 성공' });
-    } catch (err) {
-      console.error('❌ 메시지 저장 오류:', err);
-      res.status(500).json({ error: '메시지 저장 실패' });
-    }
-  };
+  const { text, senderId, chatRoomId, roomId } = req.body;
+  const resolvedRoomId = chatRoomId || roomId;
+
+  if (!text || !senderId || !resolvedRoomId) {
+    return res.status(400).json({ error: 'text, senderId, roomId(chatRoomId) 가 필요합니다.' });
+  }
+
+  try {
+    const messageData = {
+      senderId,
+      text,
+      sentAt: new Date(),
+    };
+
+    // ✅ 메시지 저장
+    await db.collection('messages')
+      .doc(resolvedRoomId)
+      .collection('chat')
+      .add(messageData);
+
+    // ✅ 마지막 메시지 갱신 or 생성 (문서가 없어도 에러 없음)
+    await db.collection('chatRooms')
+      .doc(resolvedRoomId)
+      .set(
+        { lastMessage: text },
+        { merge: true } // 🔥 없으면 생성, 있으면 필드만 갱신
+      );
+
+    res.json({ message: '메시지 저장 성공' });
+  } catch (err) {
+    console.error('❌ 메시지 저장 오류:', err);
+    res.status(500).json({ error: '메시지 저장 실패' });
+  }
+};
 
 // 나의 채팅방 목록 조회
 exports.getUserChatRooms = async (req, res) => {
@@ -119,5 +120,31 @@ exports.getMessages = async (req, res) => {
     } catch (err) {
       console.error('❌ 메시지 조회 오류:', err.message);
       res.status(500).json({ error: '메시지를 가져오지 못했습니다.' });
+    }
+  };
+
+  exports.markMessageAsRead = async (req, res) => {
+    const { roomId, messageId } = req.params;
+    const userId = req.user?.uid;
+  
+    if (!userId || !roomId || !messageId) {
+      return res.status(400).json({ error: 'userId, roomId, messageId가 필요합니다.' });
+    }
+  
+    try {
+      const messageRef = db
+        .collection('messages')
+        .doc(roomId)
+        .collection('chat')
+        .doc(messageId);
+  
+      await messageRef.update({
+        readBy: admin.firestore.FieldValue.arrayUnion(userId)
+      });
+  
+      res.json({ message: '읽음 처리 완료' });
+    } catch (err) {
+      console.error('❌ 읽음 처리 실패:', err.message);
+      res.status(500).json({ error: '읽음 처리 중 오류' });
     }
   };
