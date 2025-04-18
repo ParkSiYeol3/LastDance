@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Firebase 로그인 및 ID 토큰 발급</title>
+</head>
+<body>
+  <h1>🔥 Firebase 로그인 테스트</h1>
+  <input id="email" type="email" placeholder="이메일" />
+  <input id="password" type="password" placeholder="비밀번호" />
+  <button onclick="login()">로그인</button>
+
+  <pre id="output"></pre>
+
+  <script type="module">
+    // Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
+    // 🔧 너의 Firebase 설정 정보
+    const firebaseConfig = {
+      apiKey: "AIzaSyDO4Ob4MXJn2dNw87zlfygBKUf87hzo_9U",
+      authDomain: "last-dance-96dd5.firebaseapp.com",
+      projectId: "last-dance-96dd5",
+      appId: "1:1072490774071:web:e64ce7372c721d636489b2"
+    };
+
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // 로그인 함수
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const output = document.getElementById("output");
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const token = await userCredential.user.getIdToken();
+        output.textContent = `✅ 로그인 성공\n\n🔐 Firebase ID 토큰:\n\n${token}`;
+        console.log("✅ Firebase Token:", token);
+      } catch (err) {
+        output.textContent = `❌ 로그인 실패: ${err.message}`;
+      }
+    }
+
+    // ✅ 버튼에서도 인식되도록 전역에 등록
+    window.login = login;
+  </script>
+</body>
+</html>
