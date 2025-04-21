@@ -184,6 +184,7 @@ exports.getChatRoomsWithSummary = async (req, res) => {
 // 💬 상대방 프로필 포함한 채팅방 목록 조회
 exports.getChatRoomsWithProfile = async (req, res) => {
   const currentUserId = req.user.uid;
+  console.log('🔑 현재 로그인한 사용자 UID:', currentUserId);
 
   try {
     const snapshot = await db
@@ -191,15 +192,21 @@ exports.getChatRoomsWithProfile = async (req, res) => {
       .where('participants', 'array-contains', currentUserId)
       .get();
 
+    console.log('📦 찾은 채팅방 수:', snapshot.size);
+
+    if (snapshot.empty) {
+      return res.json({ rooms: [] });
+    }
+
     const rooms = await Promise.all(snapshot.docs.map(async doc => {
       const roomData = doc.data();
       const roomId = doc.id;
 
-      // 현재 유저를 제외한 상대방 ID 추출
       const opponentId = roomData.participants.find(uid => uid !== currentUserId);
+      console.log(`🧍 상대방 UID for room ${roomId}:`, opponentId);
 
-      // 상대방 정보 가져오기
-      let opponentProfile = {};
+      let opponentProfile = { uid: opponentId, nickname: '알 수 없음', profileImage: null };
+
       if (opponentId) {
         const userDoc = await db.collection('users').doc(opponentId).get();
         if (userDoc.exists) {
@@ -209,14 +216,16 @@ exports.getChatRoomsWithProfile = async (req, res) => {
             nickname: userData.nickname || '이름없음',
             profileImage: userData.profileImage || null,
           };
+        } else {
+          console.warn(`⚠️ 상대방 정보 없음: ${opponentId}`);
         }
       }
 
       return {
         id: roomId,
-        rentalItemId: roomData.rentalItemId,
+        rentalItemId: roomData.rentalItemId || null,
         lastMessage: roomData.lastMessage || '',
-        createdAt: roomData.createdAt,
+        createdAt: roomData.createdAt || null,
         opponent: opponentProfile,
       };
     }));
