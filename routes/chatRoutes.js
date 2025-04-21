@@ -16,4 +16,9 @@ router.post(
     chatController.markMessageAsRead
   );   
 
+// 상대방 프로필 포함된 채팅방 목록 조회
+router.get('/rooms/with-profile', authenticate, chatController.getChatRoomsWithProfile);
+// 🔧 participants 추가용 API
+router.post('/rooms/add-participants', chatController.addParticipants);
+
 module.exports = router;

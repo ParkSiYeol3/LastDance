@@ -141,3 +141,105 @@ exports.getMessages = async (req, res) => {
       res.status(500).json({ error: '읽음 처리 실패' });
     }
   };
+
+  // GET /api/chat/rooms/:userId
+exports.getChatRoomsWithSummary = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const snapshot = await db.collection('chatRooms')
+      .where('participants', 'array-contains', userId)
+      .get();
+
+    const rooms = [];
+
+    for (const doc of snapshot.docs) {
+      const roomData = doc.data();
+      const chatRoomId = doc.id;
+
+      // 🔎 읽지 않은 메시지 수 계산
+      const unreadSnapshot = await db.collection('messages')
+        .doc(chatRoomId)
+        .collection('chat')
+        .where('senderId', '!=', userId)
+        .where('isRead', '==', false)
+        .get();
+
+      rooms.push({
+        chatRoomId,
+        lastMessage: roomData.lastMessage || '',
+        lastMessageTime: roomData.createdAt?.toDate() || null,
+        unreadCount: unreadSnapshot.size,
+        participants: roomData.participants
+      });
+    }
+
+    res.json({ rooms });
+  } catch (err) {
+    console.error('❌ 채팅방 목록 조회 실패:', err);
+    res.status(500).json({ error: '채팅방 목록 조회 실패' });
+  }
+};
+
+exports.getChatRoomsWithProfile = async (req, res) => {
+  const userId = req.user.uid;
+
+  try {
+    const snapshot = await db.collection('chatRooms')
+      .where('participants', 'array-contains', userId)
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    const chatRooms = [];
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const roomId = doc.id;
+
+      const otherUserId = data.participants.find(uid => uid !== userId);
+
+      let otherUserProfile = null;
+      if (otherUserId) {
+        const userDoc = await db.collection('users').doc(otherUserId).get();
+        if (userDoc.exists) {
+          otherUserProfile = userDoc.data();
+        }
+      }
+
+      chatRooms.push({
+        id: roomId,
+        rentalItemId: data.rentalItemId,
+        lastMessage: data.lastMessage || '',
+        createdAt: data.createdAt,
+        otherUserId,
+        otherUserProfile,
+      });
+    }
+
+    res.json({ rooms: chatRooms });
+  } catch (err) {
+    console.error('❌ 채팅방+프로필 목록 조회 실패:', err);
+    res.status(500).json({ error: '채팅방 목록 조회 실패' });
+  }
+};
+
+// participants 필드 추가/갱신용
+exports.addParticipants = async (req, res) => {
+  const { roomId, participants } = req.body;
+
+  if (!roomId || !participants || !Array.isArray(participants)) {
+    return res.status(400).json({ error: 'roomId와 participants(Array)가 필요합니다.' });
+  }
+
+  try {
+    await db.collection('chatRooms').doc(roomId).set(
+      { participants },
+      { merge: true } // 필드만 병합 (문서가 있어도 덮어쓰지 않음)
+    );
+
+    res.json({ message: 'participants 필드 추가 완료' });
+  } catch (err) {
+    console.error('❌ participants 필드 추가 오류:', err.message);
+    res.status(500).json({ error: '추가 실패' });
+  }
+};
