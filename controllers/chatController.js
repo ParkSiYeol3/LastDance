@@ -181,44 +181,49 @@ exports.getChatRoomsWithSummary = async (req, res) => {
   }
 };
 
+// 💬 상대방 프로필 포함한 채팅방 목록 조회
 exports.getChatRoomsWithProfile = async (req, res) => {
-  const userId = req.user.uid;
+  const currentUserId = req.user.uid;
 
   try {
-    const snapshot = await db.collection('chatRooms')
-      .where('participants', 'array-contains', userId)
-      .orderBy('createdAt', 'desc')
+    const snapshot = await db
+      .collection('chatRooms')
+      .where('participants', 'array-contains', currentUserId)
       .get();
 
-    const chatRooms = [];
-
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
+    const rooms = await Promise.all(snapshot.docs.map(async doc => {
+      const roomData = doc.data();
       const roomId = doc.id;
 
-      const otherUserId = data.participants.find(uid => uid !== userId);
+      // 현재 유저를 제외한 상대방 ID 추출
+      const opponentId = roomData.participants.find(uid => uid !== currentUserId);
 
-      let otherUserProfile = null;
-      if (otherUserId) {
-        const userDoc = await db.collection('users').doc(otherUserId).get();
+      // 상대방 정보 가져오기
+      let opponentProfile = {};
+      if (opponentId) {
+        const userDoc = await db.collection('users').doc(opponentId).get();
         if (userDoc.exists) {
-          otherUserProfile = userDoc.data();
+          const userData = userDoc.data();
+          opponentProfile = {
+            uid: opponentId,
+            nickname: userData.nickname || '이름없음',
+            profileImage: userData.profileImage || null,
+          };
         }
       }
 
-      chatRooms.push({
+      return {
         id: roomId,
-        rentalItemId: data.rentalItemId,
-        lastMessage: data.lastMessage || '',
-        createdAt: data.createdAt,
-        otherUserId,
-        otherUserProfile,
-      });
-    }
+        rentalItemId: roomData.rentalItemId,
+        lastMessage: roomData.lastMessage || '',
+        createdAt: roomData.createdAt,
+        opponent: opponentProfile,
+      };
+    }));
 
-    res.json({ rooms: chatRooms });
+    res.json({ rooms });
   } catch (err) {
-    console.error('❌ 채팅방+프로필 목록 조회 실패:', err);
+    console.error('❌ 채팅방 조회 오류:', err);
     res.status(500).json({ error: '채팅방 목록 조회 실패' });
   }
 };
