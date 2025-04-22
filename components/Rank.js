@@ -1,6 +1,6 @@
 // components/Rank.js
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Footer from '../components/Footer';
 
 const { width } = Dimensions.get('window');

@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Image,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import Footer from './Footer';
 
 const Write = ({ navigation }) => {
