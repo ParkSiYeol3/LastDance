@@ -32,6 +32,7 @@ exports.startChat = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 // 💬 메시지 전송 (roomId or chatRoomId 모두 허용)
 exports.sendMessage = async (req, res) => {
   const { text, senderId, chatRoomId, roomId } = req.body;
@@ -122,6 +123,7 @@ exports.getMessages = async (req, res) => {
       res.status(500).json({ error: '메시지를 가져오지 못했습니다.' });
     }
   };
+
 
   exports.markMessageAsRead = async (req, res) => {
     const { roomId, messageId } = req.body;
@@ -257,3 +259,4 @@ exports.addParticipants = async (req, res) => {
     res.status(500).json({ error: '추가 실패' });
   }
 };
+
