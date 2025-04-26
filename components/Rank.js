@@ -17,7 +17,7 @@ const Rank = () => {
 
       {/* 내 등급 정보 */}
       <View style={styles.levelBox}>
-        <Text style={styles.levelText}>내등급 : Lv3</Text>
+        <Text style={styles.levelText}>내 등급 : Lv3</Text>
         <Text style={styles.subText}>내 등급을 알수있습니다</Text>
         <Text style={styles.pointText}>현재 포인트: XXXX / 10000</Text>
       </View>

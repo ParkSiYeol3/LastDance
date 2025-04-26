@@ -16,6 +16,10 @@ import ChatList from './components/ChatList';
 import ChatListItem from './components/ChatListItem';
 import ChatRoom from './components/ChatRoom';
 import Write from './components/Write';
+import Deposit from './components/Deposit';
+import Notice from './components/Notice';
+import SalesHistory from './components/SalesHistory';
+import Favorites from './components/Favorites'; // 추가
 
 
 const Stack = createStackNavigator();
@@ -34,11 +38,11 @@ export default function App() {
         <Stack.Screen name="Map" component={Map} />
         <Stack.Screen name="MyPage" component={MyPage} />
         <Stack.Screen name="Settings" component={Settings} options={{ headerShown: false }}/>
-        <Stack.Screen
-  name="Rank"
-  component={Rank}
-  options={{ headerShown: false }} // 기본 헤더 숨기기
-/>
+        <Stack.Screen name="Deposit" component={Deposit} />
+        <Stack.Screen name="Notice" component={Notice} />
+        <Stack.Screen name="SalesHistory" component={SalesHistory} />
+        <Stack.Screen name="Favorites" component={Favorites} />
+        <Stack.Screen name="Rank" component={Rank} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

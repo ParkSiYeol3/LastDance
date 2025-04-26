@@ -27,10 +27,11 @@ const MyPage = ({ navigation }) => {
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.button}><Text>🧾 거래 내역</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.button}><Text>⭐ 즐겨찾기</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.button}><Text>💳 보증금 결제 수단</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Rank')} ><Text>👤 등급별 혜택 안내</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SalesHistory')}><Text>🧾 거래 내역</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Favorites')}><Text>⭐ 즐겨찾기</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Deposit')}><Text>💳 보증금 결제 수단</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Rank')}><Text>👤 등급별 혜택 안내</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Notice')}><Text>📢 공지사항</Text></TouchableOpacity>
       </View>
 
       {/* 푸터바 */}
