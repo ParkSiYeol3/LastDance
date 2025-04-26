@@ -18,6 +18,7 @@ import Deposit from './components/Deposit';
 import Notice from './components/Notice';
 import SalesHistory from './components/SalesHistory';
 import Favorites from './components/Favorites'; // 추가
+import MapScreen from './components/Map'; // 상단에 추가
 
 
 const Stack = createStackNavigator();
@@ -40,6 +41,7 @@ export default function App() {
         <Stack.Screen name="Notice" component={Notice} />
         <Stack.Screen name="SalesHistory" component={SalesHistory} />
         <Stack.Screen name="Favorites" component={Favorites} />
+        <Stack.Screen name="Map" component={MapScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
