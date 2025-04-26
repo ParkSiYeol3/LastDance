@@ -50,9 +50,9 @@ exports.sendMessage = async (req, res) => {
     };
 
     // ✅ 메시지 저장
-    await db.collection('messages')
+    await db.collection('chatRooms')
       .doc(resolvedRoomId)
-      .collection('chat')
+      .collection('messages')
       .add(messageData);
 
     // ✅ 마지막 메시지 갱신 or 생성 (문서가 없어도 에러 없음)
@@ -238,6 +238,7 @@ exports.getChatRoomsWithProfile = async (req, res) => {
     res.status(500).json({ error: '채팅방 목록 조회 실패' });
   }
 };
+
 
 // participants 필드 추가/갱신용
 exports.addParticipants = async (req, res) => {
