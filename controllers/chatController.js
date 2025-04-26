@@ -124,7 +124,7 @@ exports.getMessages = async (req, res) => {
     }
   };
 
-
+// 메시지 읽음 처리
   exports.markMessageAsRead = async (req, res) => {
     const { roomId, messageId } = req.body;
   
