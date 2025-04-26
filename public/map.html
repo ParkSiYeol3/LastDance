@@ -6,10 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>동네 지도</title>
     <link rel="stylesheet" href="style.css" />
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
-
-
-
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap" async
+        defer></script>
 </head>
 
 <body>
@@ -36,9 +34,18 @@
             });
         }
 
-        window.onload = initMap;
+        // 페이지가 로드되면 지도를 초기화합니다.
+        window.onload = function () {
+            if (typeof google !== 'undefined' && google.maps) {
+                initMap();  // Google Maps API가 로드되면 지도 초기화
+            } else {
+                console.error('Google Maps API 로드 실패');
+            }
+        };
     </script>
+
     <script type="module">
+        // 헤더 로더 기능 (header-loader.js)
         import { loadHeader } from './js/header-loader.js';
         loadHeader();
     </script>
