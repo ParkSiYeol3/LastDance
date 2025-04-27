@@ -17,9 +17,9 @@
         <!-- 계정 정보 수정 -->
         <section class="settings-section">
             <h3>계정 정보</h3>
-            <p>이름: <span id="user-name">홍길동</span> <button id="edit-name-btn">수정</button></p>
-            <p>이메일: <span id="user-email">user@example.com</span> <button disabled>수정 불가</button></p>
-            <p>주소: <span id="user-address">서울시 강남구</span> <button id="edit-address-btn">수정</button></p>
+            <p>이름: <span id="user-name"></span> <button id="edit-name-btn">수정</button></p>
+            <p>이메일: <span id="user-email"></span> <button disabled>수정 불가</button></p>
+            <p>주소: <span id="user-address"></span> <button id="edit-address-btn">수정</button></p>
         </section>
 
         <!-- 알림 설정 -->
@@ -57,6 +57,11 @@
             <button id="logout-btn">로그아웃</button>
             <button id="delete-account-btn" class="danger">회원 탈퇴</button>
         </section>
+
+        <section class="settings-section">
+            <button id="send-test-email-btn">테스트 이메일 보내기</button>
+        </section>
+
     </main>
 
     <script type="module" src="./js/firebase-config.js"></script>

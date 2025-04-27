@@ -115,3 +115,20 @@ deleteAccountBtn.addEventListener('click', async () => {
 		alert('계정 삭제 실패: 다시 로그인 후 시도해 주세요.');
 	}
 });
+
+async function sendTestEmail() {
+	const res = await fetch('http://localhost:3000/send-email', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			to: currentUser.email,
+			subject: '설정 테스트 이메일',
+			text: '알림 기능 테스트입니다!',
+		}),
+	});
+
+	const text = await res.text();
+	alert(text);
+}
+
+document.getElementById('send-test-email-btn').addEventListener('click', sendTestEmail);
