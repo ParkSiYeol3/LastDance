@@ -15,3 +15,4 @@ const firebaseConfig = {
   
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const API_URL = "http://localhost:3000"; // 나중에 서버 배포하면 URL 바꿔야 해

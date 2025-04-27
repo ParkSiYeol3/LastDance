@@ -62,7 +62,7 @@ function HomeScreen({ navigation }) {
 
   const callBackendAPI = async () => {
     try {
-      const response = await fetch('http://192.168.219.101:3000/api/hello'); // ← 여기 IP 주소 너 걸로 변경!
+      const response = await fetch('http://192.168.0.6:3000/api/hello'); // ← 여기 IP 주소 너 걸로 변경!
       const data = await response.json();
       console.log('서버 응답:', data);
       alert('서버 응답: ' + data.message);
