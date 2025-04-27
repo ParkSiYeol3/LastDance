@@ -26,6 +26,6 @@ app.get('/api/hello', (req, res) => {
 });
 
 // 🚀 서버 시작
-app.listen(PORT, () => {
-  console.log(`✅ 서버가 http://localhost:${PORT} 에서 실행 중`);
+app.listen(PORT, '0.0.0.0', () => {    // ✅ 여기 수정 (0.0.0.0)
+  console.log(`✅ 서버가 http://0.0.0.0:${PORT} 에서 실행 중`);
 });

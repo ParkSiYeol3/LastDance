@@ -4,48 +4,45 @@ import Footer from '../components/Footer';
 import { auth } from '../firebase-config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 
 export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const router = useRouter(); // ✅ 페이지 이동용
+  const navigation = useNavigation();
 
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('알림', '이메일과 비밀번호를 입력하세요!');
       return;
     }
-
+  
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      // ✅ Firebase 토큰 가져오기
+  
+      // ✅ 토큰과 UID 모두 저장
       const token = await user.getIdToken();
-
-      // ✅ AsyncStorage에 저장
       await AsyncStorage.setItem('accessToken', token);
-
+      await AsyncStorage.setItem('userId', user.uid); // 🔥 추가
+  
       Alert.alert('성공', '로그인 성공!');
-      router.replace('/home'); // 🔥 로그인 성공 후 이동할 화면
+      navigation.replace('Home');
     } catch (error) {
       console.error('로그인 오류:', error);
       Alert.alert('로그인 실패', error.message);
     }
   };
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* 이메일 입력 */}
       <View style={styles.container1}>
         <TextInput
           style={styles.input}
           placeholder="Username or E-mail"
           value={email}
-          onChangeText={setEmail} // ✅ 이메일 입력 반영
+          onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
         />
@@ -53,31 +50,27 @@ export default function App() {
           아이디 비밀번호를 찾으시겠습니까?
         </View>
 
-        {/* 비밀번호 입력 */}
         <TextInput
           style={[styles.input, styles.passwordInput]}
           placeholder="Password"
           value={password}
-          onChangeText={setPassword} // ✅ 비밀번호 입력 반영
+          onChangeText={setPassword}
           secureTextEntry
         />
       </View>
 
       <View style={styles.container1}>
-        {/* 로그인 버튼 */}
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>LOGIN</Text>
         </TouchableOpacity>
 
-        {/* 회원가입 버튼 */}
         <TouchableOpacity style={styles.button}>
           <Text style={styles.buttonText}>REGISTER</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.container2}>
-        {/* 푸터바가 들어갈 공간 */}
-        <Footer navigation={router} />
+        <Footer navigation={navigation} />
       </View>
     </View>
   );

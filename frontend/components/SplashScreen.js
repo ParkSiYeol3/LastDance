@@ -14,7 +14,7 @@ export default function SplashScreen({ navigation }) {
 
     // 등장 후 2초 기다리고 Home으로 이동
     const timer = setTimeout(() => {
-      navigation.replace('Home');
+      navigation.replace('Login');
     }, 2500);
 
     return () => clearTimeout(timer);

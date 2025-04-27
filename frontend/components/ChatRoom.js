@@ -1,35 +1,39 @@
+// ChatRoom.js (수정된 버전)
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { fetchMessages, sendMessage, markMessageAsRead } from '../components/ChatService'; // ✅ 새로 추가한 API 호출 모듈
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase-config';
+import { sendMessage, markMessageAsRead } from '../components/ChatService';
 
 const ChatRoom = ({ route }) => {
   const { roomId } = route.params;
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
-  const currentUserId = 'USER_123'; // TODO: 실제 로그인한 유저 ID로 교체 필요
+  const currentUserId = 'USER_123'; // TODO: 실제 로그인 유저 ID로 교체
 
-  // ✅ 채팅 메시지 불러오기
+  // 실시간 메시지 불러오기
   useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        const msgs = await fetchMessages(roomId);
-        setMessages(msgs.map(m => ({
-          ...m,
-          timestamp: m.sentAt 
-            ? new Date(m.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : '',
-        })));
-      } catch (err) {
-        console.error('메시지 로딩 실패:', err);
-      }
-    };
+    if (!roomId) return;
 
-    loadMessages();
-    const interval = setInterval(loadMessages, 3000); // 3초마다 새로 불러오기
-    return () => clearInterval(interval);
+    const messagesRef = collection(db, 'chatRooms', roomId, 'messages');
+    const q = query(messagesRef, orderBy('sentAt'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map((doc) => ({
+        id: doc.id,  // 메시지 ID 추가
+        text: doc.data().text || '',
+        senderId: doc.data().senderId || '',
+        timestamp: doc.data().sentAt
+          ? new Date(doc.data().sentAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : '',
+      }));
+      setMessages(msgs);
+    });
+
+    return unsubscribe;
   }, [roomId]);
 
-  // ✅ 메시지 전송
+  // 메시지 전송
   const handleSend = async () => {
     if (!inputText.trim()) return;
     try {
@@ -40,7 +44,7 @@ const ChatRoom = ({ route }) => {
     }
   };
 
-  // ✅ 메시지 읽음 처리
+  // 메시지 읽음 처리
   const handleRead = async (messageId) => {
     try {
       await markMessageAsRead(roomId, messageId);
@@ -53,10 +57,10 @@ const ChatRoom = ({ route }) => {
     <View style={styles.container}>
       <FlatList
         data={messages}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id}  // 메시지 ID로 keyExtractor 설정
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => handleRead(item.id)} // 메시지 누르면 읽음 처리
+            onPress={() => handleRead(item.id)}
             style={item.senderId === currentUserId ? styles.myMessage : styles.theirMessage}
           >
             <Text>{item.text}</Text>
