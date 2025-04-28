@@ -1,86 +1,131 @@
-// ChatRoom.js (수정된 버전)
-import React, { useState, useEffect } from 'react';
-import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase-config';
-import { sendMessage, markMessageAsRead } from '../components/ChatService';
+// components/ChatRoom.js
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  TextInput,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  fetchMessages,
+  sendMessage,
+  markMessageAsRead,
+} from '../components/ChatService';
 
 const ChatRoom = ({ route }) => {
-  const { roomId } = route.params;
+  // route.params 에 어떤 키로 넘어오든 모두 시도해서 roomId 를 잡아낸다
+  const {
+    roomId: paramRoomId,
+    chatRoomId,
+    id: directId,
+  } = route.params || {};
+  const roomId = paramRoomId ?? chatRoomId ?? directId ?? null;
+
+  const [userId, setUserId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
-  const currentUserId = 'USER_123'; // TODO: 실제 로그인 유저 ID로 교체
 
-  // 실시간 메시지 불러오기
+  // 디버그용: params 확인
   useEffect(() => {
-    if (!roomId) return;
+    console.log('[ChatRoom] route.params=', route.params, '→ roomId=', roomId);
+  }, [route.params]);
 
-    const messagesRef = collection(db, 'chatRooms', roomId, 'messages');
-    const q = query(messagesRef, orderBy('sentAt'));
+  // 1) 로그인된 유저 ID 가져오기
+  useEffect(() => {
+    AsyncStorage.getItem('userId')
+      .then(uid => {
+        if (uid) setUserId(uid);
+        else Alert.alert('알림', '로그인 후 이용해주세요.');
+      })
+      .catch(err => console.error('userId 가져오기 실패', err));
+  }, []);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map((doc) => ({
-        id: doc.id,  // 메시지 ID 추가
-        text: doc.data().text || '',
-        senderId: doc.data().senderId || '',
-        timestamp: doc.data().sentAt
-          ? new Date(doc.data().sentAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : '',
-      }));
-      setMessages(msgs);
-    });
+  // 2) roomId & userId 있을 때만 메시지 조회
+  useEffect(() => {
+    if (!roomId || !userId) return;
 
-    return unsubscribe;
-  }, [roomId]);
+    const load = async () => {
+      try {
+        const msgs = await fetchMessages(roomId);
+        setMessages(msgs);
+      } catch (err) {
+        console.error('메시지 불러오기 실패', err);
+      }
+    };
 
-  // 메시지 전송
-  const handleSend = async () => {
+    load();
+    const timer = setInterval(load, 2000);
+    return () => clearInterval(timer);
+  }, [roomId, userId]);
+
+  // 3) 메시지 전송
+  const onSend = async () => {
     if (!inputText.trim()) return;
+    if (!roomId || !userId) {
+      Alert.alert('오류', '잘못된 채팅방입니다.');
+      return;
+    }
     try {
-      await sendMessage(roomId, currentUserId, inputText);
+      await sendMessage(roomId, userId, inputText);
       setInputText('');
+      const msgs = await fetchMessages(roomId);
+      setMessages(msgs);
     } catch (err) {
-      console.error('메시지 전송 실패:', err);
+      console.error('메시지 전송 실패', err);
+      Alert.alert('오류', '메시지 전송에 실패했습니다.');
     }
   };
 
-  // 메시지 읽음 처리
-  const handleRead = async (messageId) => {
-    try {
-      await markMessageAsRead(roomId, messageId);
-    } catch (err) {
-      console.error('읽음 처리 실패:', err);
-    }
+  // 4) 읽음 처리
+  const onRead = messageId => {
+    if (!roomId) return;
+    markMessageAsRead(roomId, messageId).catch(err =>
+      console.error('읽음 처리 실패', err)
+    );
   };
 
   return (
     <View style={styles.container}>
       <FlatList
         data={messages}
-        keyExtractor={(item) => item.id}  // 메시지 ID로 keyExtractor 설정
+        keyExtractor={(item, idx) => item.id || idx.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => handleRead(item.id)}
-            style={item.senderId === currentUserId ? styles.myMessage : styles.theirMessage}
+            onPress={() => onRead(item.id)}
+            style={
+              item.senderId === userId
+                ? styles.myMessage
+                : styles.theirMessage
+            }
           >
             <Text>{item.text}</Text>
-            <View style={styles.metaRow}>
-              <Text style={styles.timeText}>{item.timestamp}</Text>
-            </View>
+            <Text style={styles.timeText}>
+              {item.sentAt
+                ? new Date(item.sentAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : ''}
+            </Text>
           </TouchableOpacity>
         )}
-        style={styles.messageList}
+        contentContainerStyle={{ padding: 10 }}
+        ListEmptyComponent={<Text>아직 대화가 없습니다.</Text>}
       />
 
       <View style={styles.inputContainer}>
         <TextInput
+          style={styles.input}
           value={inputText}
           onChangeText={setInputText}
           placeholder="메시지를 입력하세요"
-          style={styles.input}
         />
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <Text style={styles.sendText}>전송</Text>
+        <TouchableOpacity style={styles.button} onPress={onSend}>
+          <Text style={styles.buttonText}>전송</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -91,54 +136,48 @@ export default ChatRoom;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  messageList: { padding: 10 },
   myMessage: {
     alignSelf: 'flex-end',
     backgroundColor: '#d1e7dd',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 5,
+    padding: 8,
+    borderRadius: 8,
+    marginVertical: 4,
     maxWidth: '80%',
   },
   theirMessage: {
     alignSelf: 'flex-start',
     backgroundColor: '#f8d7da',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 5,
+    padding: 8,
+    borderRadius: 8,
+    marginVertical: 4,
     maxWidth: '80%',
+  },
+  timeText: {
+    fontSize: 10,
+    color: '#555',
+    marginTop: 4,
+    textAlign: 'right',
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 10,
     borderTopWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#f9f9f9',
+    borderColor: '#eee',
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#aaa',
+    borderColor: '#ccc',
     borderRadius: 20,
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
     height: 40,
   },
-  sendButton: {
-    marginLeft: 10,
+  button: {
+    marginLeft: 8,
     backgroundColor: '#31C585',
-    paddingHorizontal: 15,
     borderRadius: 20,
+    paddingHorizontal: 16,
     justifyContent: 'center',
   },
-  sendText: { color: '#fff' },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 4,
-  },
-  timeText: {
-    fontSize: 11,
-    color: '#555',
-    marginRight: 6,
-  },
+  buttonText: { color: '#fff', fontWeight: 'bold' },
 });

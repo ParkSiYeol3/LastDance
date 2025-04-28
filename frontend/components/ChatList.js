@@ -1,3 +1,4 @@
+// components/ChatList.js
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import Footer from '../components/Footer';
@@ -22,11 +23,10 @@ const ChatList = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/api/chat/rooms/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.get(
+          `${API_URL}/api/chat/rooms/${userId}`, // getUserChatRooms 호출
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
         setChatRooms(response.data.rooms || []);
       } catch (error) {
@@ -39,22 +39,31 @@ const ChatList = () => {
   }, []);
 
   const renderItem = ({ item }) => {
-    const time = item.lastMessageTime
-      ? new Date(item.lastMessageTime._seconds ? item.lastMessageTime._seconds * 1000 : item.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    // getUserChatRooms 는 room.id, room.lastMessage, room.createdAt 만 줍니다.
+    const time = item.createdAt
+      ? new Date(
+          // createdAt 이 Firestore Timestamp 객체이면 seconds 필드로 처리
+          item.createdAt._seconds 
+            ? item.createdAt._seconds * 1000 
+            : item.createdAt
+        ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : '';
-  
+
     return (
       <TouchableOpacity
-        key={item.chatRoomId}   // ✅ 여기 key 추가!
-        onPress={() => navigation.navigate('ChatRoom', { roomId: item.chatRoomId })}
+        onPress={() =>
+          navigation.navigate('ChatRoom', {
+            roomId: item.id,      // ← 여기서 반드시 item.id 를 넘깁니다!
+          })
+        }
       >
         <ChatListItem
-          name={item.opponent?.nickname || '상대방'}
+          name={'상대방'}                // opponent 정보가 없으므로 고정 텍스트
           time={time}
           message={item.lastMessage || ''}
           imageUrl={''}
-          profileImageUrl={item.opponent?.profileImage || ''}
-          unreadCount={item.unreadCount || 0}
+          profileImageUrl={''}
+          unreadCount={0}
         />
       </TouchableOpacity>
     );
@@ -64,15 +73,13 @@ const ChatList = () => {
     <View style={styles.wrapper}>
       <View style={styles.container}>
         <Text style={styles.title}>채팅 목록</Text>
-
         <FlatList
           data={chatRooms}
-          keyExtractor={(item) => item.chatRoomId}
+          keyExtractor={(item) => item.id}  // ← keyExtractor 도 item.id 로
           renderItem={renderItem}
           ListEmptyComponent={<Text>채팅방이 없습니다.</Text>}
         />
       </View>
-
       <View style={styles.footer}>
         <Footer navigation={navigation} />
       </View>

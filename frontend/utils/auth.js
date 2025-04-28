@@ -12,3 +12,16 @@ export const getAccessToken = async () => {
     return null;
   }
 };
+
+
+export const refreshToken = async () => {
+  try {
+    const response = await axios.post('/api/refresh-token');  // 서버에서 토큰을 갱신하는 API 호출
+    const { newToken } = response.data;  // 새로운 토큰 받기
+    localStorage.setItem('accessToken', newToken);  // 새 토큰 저장
+    return newToken;
+  } catch (error) {
+    console.error('토큰 재발급 실패:', error);
+    throw error;
+  }
+};
