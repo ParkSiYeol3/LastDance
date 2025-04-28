@@ -1,76 +1,71 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import Footer from './Footer';
+import { db } from '../firebase-config';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
-const Write = ({ navigation }) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [pricePerDay, setPricePerDay] = useState('');
+const Write = () => {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const navigation = useNavigation();
+
+  const handleSubmit = async () => {
+    if (!name || !description) {
+      Alert.alert('알림', '제목과 내용을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        Alert.alert('오류', '로그인이 필요합니다.');
+        return;
+      }
+
+      // Firestore에 imageURL 없이 저장
+      await addDoc(collection(db, 'items'), {
+        name: name,
+        description: description,
+        userId: userId,
+        timestamp: serverTimestamp(),
+      });
+
+      Alert.alert('성공', '게시물이 등록되었습니다!');
+      navigation.replace('Home');
+    } catch (error) {
+      console.error('게시물 등록 오류:', error);
+      Alert.alert('등록 실패', error.message);
+    }
+  };
 
   return (
     <View style={styles.wrapper}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* 이미지 등록 */}
-        <TouchableOpacity style={styles.imageUpload}>
-          <Image
-            source={require('../assets/camera.png')}
-            style={styles.cameraIcon}
-          />
-        </TouchableOpacity>
-
-        {/* 제목 */}
         <Text style={styles.label}>제목</Text>
         <TextInput
           style={styles.input}
-          placeholder="이 옷 공유합니다"
-          value={title}
-          onChangeText={setTitle}
+          placeholder="제목을 입력하세요"
+          value={name}
+          onChangeText={setName}
         />
 
-        {/* 내용 */}
         <Text style={styles.label}>게시물 내용</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="이 옷 공유합니다"
-          value={content}
-          onChangeText={setContent}
+          placeholder="내용을 입력하세요"
+          value={description}
+          onChangeText={setDescription}
           multiline
           numberOfLines={5}
         />
 
-        {/* 대여 기간 */}
-        <Text style={styles.label}>기간은 얼마인가요?</Text>
-        <View style={styles.dateRow}>
-          <TextInput
-            style={styles.dateInput}
-            value="2025-03-27"
-            editable={false}
-          />
-          <Text style={{ marginHorizontal: 8 }}>~</Text>
-          <TextInput
-            style={styles.dateInput}
-            value="2025-04-02"
-            editable={false}
-          />
-        </View>
-
-        {/* 가격 */}
-        <Text style={styles.label}>1일당 얼마인가요?</Text>
-        <TextInput
-          style={[styles.input, { width: 100 }]}
-          value={pricePerDay}
-          onChangeText={setPricePerDay}
-          keyboardType="numeric"
-          placeholder="₩"
-        />
-
-        {/* 작성 버튼 */}
-        <TouchableOpacity style={styles.submitButton}>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitText}>작성하기</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* 하단 고정 Footer */}
       <View style={styles.footer}>
         <Footer navigation={navigation} />
       </View>
@@ -87,13 +82,13 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 20,
-    paddingBottom: 100, // Footer 공간 확보
+    paddingBottom: 100,
   },
   footer: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: 60, // Footer 높이
+    height: 60,
   },
   imageUpload: {
     alignSelf: 'flex-start',
