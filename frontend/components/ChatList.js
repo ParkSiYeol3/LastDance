@@ -1,6 +1,13 @@
 // components/ChatList.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import Footer from '../components/Footer';
 import ChatListItem from './ChatListItem';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,22 +22,21 @@ const ChatList = () => {
   useEffect(() => {
     const fetchChatRooms = async () => {
       try {
+        // 토큰 가져오기
         const token = await AsyncStorage.getItem('accessToken');
-        const userId = await AsyncStorage.getItem('userId');
-
-        if (!token || !userId) {
+        if (!token) {
           Alert.alert('오류', '로그인이 필요합니다.');
           return;
         }
 
-        const response = await axios.get(
-          `${API_URL}/api/chat/rooms/${userId}`, // getUserChatRooms 호출
+        // ===== 프로필 포함된 채팅방 목록 조회 =====
+        const res = await axios.get(
+          `${API_URL}/api/chat/rooms/with-profile`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-
-        setChatRooms(response.data.rooms || []);
-      } catch (error) {
-        console.error('채팅방 목록 조회 실패:', error);
+        setChatRooms(res.data.rooms || []);
+      } catch (err) {
+        console.error('채팅방 목록 조회 실패:', err);
         Alert.alert('오류', '채팅방 목록을 불러오지 못했습니다.');
       }
     };
@@ -39,12 +45,11 @@ const ChatList = () => {
   }, []);
 
   const renderItem = ({ item }) => {
-    // getUserChatRooms 는 room.id, room.lastMessage, room.createdAt 만 줍니다.
+    // createdAt 이 Timestamp 객체라면 seconds로, 아니라면 Date 문자열로 처리
     const time = item.createdAt
       ? new Date(
-          // createdAt 이 Firestore Timestamp 객체이면 seconds 필드로 처리
-          item.createdAt._seconds 
-            ? item.createdAt._seconds * 1000 
+          item.createdAt._seconds
+            ? item.createdAt._seconds * 1000
             : item.createdAt
         ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : '';
@@ -52,18 +57,16 @@ const ChatList = () => {
     return (
       <TouchableOpacity
         onPress={() =>
-          navigation.navigate('ChatRoom', {
-            roomId: item.id,      // ← 여기서 반드시 item.id 를 넘깁니다!
-          })
+          navigation.navigate('ChatRoom', { roomId: item.id })
         }
       >
         <ChatListItem
-          name={'상대방'}                // opponent 정보가 없으므로 고정 텍스트
+          name={item.opponent?.nickname || '알 수 없는 사용자'}
           time={time}
           message={item.lastMessage || ''}
           imageUrl={''}
-          profileImageUrl={''}
-          unreadCount={0}
+          profileImageUrl={item.opponent?.profileImage || ''}
+          unreadCount={item.unreadCount ?? 0}
         />
       </TouchableOpacity>
     );
@@ -75,11 +78,12 @@ const ChatList = () => {
         <Text style={styles.title}>채팅 목록</Text>
         <FlatList
           data={chatRooms}
-          keyExtractor={(item) => item.id}  // ← keyExtractor 도 item.id 로
+          keyExtractor={(item) => item.id}
           renderItem={renderItem}
           ListEmptyComponent={<Text>채팅방이 없습니다.</Text>}
         />
       </View>
+
       <View style={styles.footer}>
         <Footer navigation={navigation} />
       </View>
@@ -91,7 +95,12 @@ export default ChatList;
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: '#fff' },
-  container: { flex: 1, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 100,
+  },
   footer: { position: 'absolute', bottom: 0, width: '100%', height: 60 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
 });
