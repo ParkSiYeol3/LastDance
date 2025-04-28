@@ -64,7 +64,7 @@ export default function App() {
           <Text style={styles.buttonText}>LOGIN</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Register')}>
           <Text style={styles.buttonText}>REGISTER</Text>
         </TouchableOpacity>
       </View>

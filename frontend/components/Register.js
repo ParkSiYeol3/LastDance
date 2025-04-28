@@ -1,9 +1,50 @@
-import React from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, StatusBar } from 'react-native';
-import Footer from '../components/Footer'; // Footer 추가
-
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase-config';
+import Footer from '../components/Footer';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Register() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [nickname, setNickname] = useState('');
+  const navigation = useNavigation();
+
+  
+  const handleRegister = async () => {
+    if (!email || !password || !name || !address || !nickname) {
+      Alert.alert('알림', '모든 필수 입력값을 채워주세요.');
+      return;
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Firestore에 추가 정보 저장
+      await setDoc(doc(db, 'users', user.uid), {
+        email,
+        phone,       // 옵션
+        name,
+        address,
+        nickname,
+      });
+
+      Alert.alert('성공', '회원가입이 완료되었습니다!');
+      navigation.replace('Login'); // 로그인 페이지로 이동
+    } catch (error) {
+      console.error('회원가입 오류:', error);
+      Alert.alert('회원가입 실패', error.message);
+    }
+  };
+
+
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -12,15 +53,15 @@ export default function Register() {
       <Text style={styles.title}>Register</Text>
 
       {/* 입력 필드들 */}
-      <TextInput style={styles.input} placeholder="Username or E-mail" />
-      <TextInput style={[styles.input, styles.passwordInput]} placeholder="Password" secureTextEntry />
-      <TextInput style={styles.input} placeholder="Phone Number" keyboardType="phone-pad" />
-      <TextInput style={styles.input} placeholder="Name" />
-      <TextInput style={styles.input} placeholder="Address" />
-      <TextInput style={styles.input} placeholder="Nick Name" />
+      <TextInput style={styles.input} placeholder="Username or E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+      <TextInput style={[styles.input, styles.passwordInput]} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+      <TextInput style={styles.input} placeholder="Phone Number (선택)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+      <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
+      <TextInput style={styles.input} placeholder="Address" value={address} onChangeText={setAddress} />
+      <TextInput style={styles.input} placeholder="Nick Name" value={nickname} onChangeText={setNickname} />
 
       {/* 회원가입 버튼 */}
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>REGISTER</Text>
       </TouchableOpacity>
 

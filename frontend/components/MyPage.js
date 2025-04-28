@@ -1,14 +1,52 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image } from 'react-native';
 import Footer from '../components/Footer';
-import gearIcon from '../assets/gear.png'; // 이미지 경로는 실제 위치에 맞게 조정!
+import gearIcon from '../assets/gear.png'; 
+import { db } from '../firebase-config';   // ✅ Firestore 연결
+import { getDoc, doc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const MyPage = ({ navigation }) => {
+  const [userData, setUserData] = useState(null);   // 사용자 데이터
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');   // 저장된 userId 가져오기
+        if (!userId) {
+          console.log('userId 없음');
+          return;
+        }
+
+        const userDocRef = doc(db, 'users', userId);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          setUserData(userDocSnap.data());
+        } else {
+          console.log('사용자 데이터 없음');
+        }
+      } catch (error) {
+        console.error('사용자 정보 가져오기 실패:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   const openSettings = () => {
-    console.log('설정창 열기');
-    navigation.navigate('Settings'); // 실제 설정 페이지로 이동
+    navigation.navigate('Settings');
   };
 
+  if (!userData) {
+    return (
+      <View style={styles.screen}>
+        <StatusBar barStyle="dark-content" />
+        <Text>로딩 중...</Text>
+      </View>
+    );
+  }
   return (
     <View style={styles.screen}>
       <StatusBar barStyle="dark-content" />
@@ -21,9 +59,12 @@ const MyPage = ({ navigation }) => {
       {/* 내용 영역 */}
       <View style={styles.container1}>
         <View style={styles.profileBox}>
-          <Text style={styles.profileText}>고윤재 Lv. 8 gold</Text>
+          <Text style={styles.profileText}>{userData.name} 님</Text>
           <Text style={styles.addressText}>
-            주소 충남 천안시 서북구 oo로 00, xx아파트{'\n'}xxx동 xxxx호
+          이메일: {userData.email}{'\n'}
+            우편번호: {userData.zipcode}{'\n'}
+            주소: {userData.address}
+
           </Text>
         </View>
 
