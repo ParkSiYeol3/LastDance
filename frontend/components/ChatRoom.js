@@ -22,7 +22,7 @@ import { API_URL } from '../firebase-config';
 const ChatRoom = ({ route }) => {
   const { roomId } = route.params;
   const [userId, setUserId] = useState(null);
-  const [participants, setParticipants] = useState({}); 
+  const [participants, setParticipants] = useState({});
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
 
@@ -46,18 +46,12 @@ const ChatRoom = ({ route }) => {
           `${API_URL}/api/chat/rooms/with-profile`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        // 이 방 ID 에 해당하는 room 객체 찾기
         const room = res.data.rooms.find(r => r.id === roomId);
         if (!room) return;
-        // participants 맵 구성
         const map = {};
-        map[userId] = {
-          nickname: '나',
-          profileImage: null, // 원한다면 내 프로필도 불러와서 세팅
-        };
+        map[userId] = { profileImage: null }; // 내 프로필 생략
         map[room.opponent.uid] = {
-          nickname: room.opponent.nickname,
-          profileImage: room.opponent.profileImage,
+          profileImage: room.opponent.profileImage.replace(/^"(.*)"$/, '$1'),
         };
         setParticipants(map);
       } catch (err) {
@@ -104,19 +98,15 @@ const ChatRoom = ({ route }) => {
   const renderItem = ({ item }) => {
     const isMe = item.senderId === userId;
     const profile = participants[item.senderId] || {};
+
     return (
-      <View
-        style={[
-          styles.row,
-          isMe ? styles.rowRight : styles.rowLeft
-        ]}
-      >
-        {/* 왼쪽(상대)일 때만 아바타 */}
+      <View style={[styles.row, isMe ? styles.rowRight : styles.rowLeft]}>
+        {/* 상대 메시지일 때만 아바타 */}
         {!isMe && (
           <Image
             source={
               profile.profileImage
-                ? { uri: profile.profileImage.replace(/^"(.*)"$/, '$1') }
+                ? { uri: profile.profileImage }
                 : require('../assets/profile.png')
             }
             style={styles.avatar}
@@ -138,18 +128,6 @@ const ChatRoom = ({ route }) => {
             })}
           </Text>
         </TouchableOpacity>
-
-        {/* 오른쪽(나)일 때만 아바타 */}
-        {isMe && (
-          <Image
-            source={
-              profile.profileImage
-                ? { uri: profile.profileImage.replace(/^"(.*)"$/, '$1') }
-                : require('../assets/profile.png')
-            }
-            style={styles.avatar}
-          />
-        )}
       </View>
     );
   };
