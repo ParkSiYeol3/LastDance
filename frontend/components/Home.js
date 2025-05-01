@@ -11,6 +11,7 @@ const Home = ({ navigation }) => {
 		fetchPosts();
 	}, []);
 
+	
 	const fetchPosts = async () => {
 		try {
 			const q = query(collection(db, 'items'), orderBy('timestamp', 'desc'));
