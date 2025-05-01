@@ -9,11 +9,14 @@ import {
   Alert,
 } from 'react-native';
 import Footer from '../components/Footer';
+import { Dimensions } from 'react-native';
 import ChatListItem from './ChatListItem';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { API_URL } from '../firebase-config';
+
+const { height } = Dimensions.get('window');
 
 const ChatList = () => {
   const [chatRooms, setChatRooms] = useState([]);
@@ -101,6 +104,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 100,
   },
-  footer: { position: 'absolute', bottom: 0, width: '100%', height: 60 },
+  footer: { position: 'absolute', bottom: 0, width: '100%', height: height * 0.115 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
 });

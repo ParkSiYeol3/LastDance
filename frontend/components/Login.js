@@ -47,18 +47,18 @@ export default function App() {
 
 			<View style={styles.container1}>
 				<TextInput style={styles.input} placeholder='Username or E-mail' value={email} onChangeText={setEmail} autoCapitalize='none' keyboardType='email-address' />
-				<View>아이디 비밀번호를 찾으시겠습니까?</View>
+				<View>아이디 또는 비밀번호를 찾으시겠습니까?</View>
 
 				<TextInput style={[styles.input, styles.passwordInput]} placeholder='Password' value={password} onChangeText={setPassword} secureTextEntry />
 			</View>
 
 			<View style={styles.container1}>
 				<TouchableOpacity style={styles.button} onPress={handleLogin}>
-					<Text style={styles.buttonText}>LOGIN</Text>
+					<Text style={styles.buttonText}>로그인</Text>
 				</TouchableOpacity>
 
 				<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Register')}>
-					<Text style={styles.buttonText}>REGISTER</Text>
+					<Text style={styles.buttonText}>회원가입</Text>
 				</TouchableOpacity>
 			</View>
 

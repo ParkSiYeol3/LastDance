@@ -31,7 +31,7 @@ export default function FindAccount() {
 
       {/* FIND 버튼 */}
       <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>FIND</Text>
+        <Text style={styles.buttonText}>찾기</Text>
       </TouchableOpacity>
 
       {/* 푸터바 공간 */}

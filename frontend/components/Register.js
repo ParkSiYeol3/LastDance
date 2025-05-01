@@ -62,7 +62,7 @@ export default function Register() {
 
       {/* 회원가입 버튼 */}
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>REGISTER</Text>
+        <Text style={styles.buttonText}>회원가입</Text>
       </TouchableOpacity>
 
       <View style={styles.container2}>
