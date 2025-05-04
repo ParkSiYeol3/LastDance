@@ -1,5 +1,5 @@
 // controllers/itemController.js
-const { admin, db } = require('../firebase/admin'); // db는 admin.firestore() 인스턴스입니다.
+const { admin, db } = require('../firebase/admin');
 
 // 아이템 상세 조회
 exports.getItemDetail = async (req, res) => {
@@ -11,11 +11,9 @@ exports.getItemDetail = async (req, res) => {
 		}
 		const item = itemSnap.data();
 
-		// users 컬렉션에서 nickname 가져오기
 		const userSnap = await db.collection('users').doc(item.userId).get();
 		const itemOwnerName = userSnap.exists ? userSnap.data().nickname : '등록자 정보 없음';
 
-		// item + itemOwnerName 을 같이 응답
 		res.json({ item, itemOwnerName });
 	} catch (error) {
 		console.error('아이템 로딩 오류:', error);
@@ -31,7 +29,11 @@ exports.updateItem = async (req, res) => {
 		await db
 			.collection('items')
 			.doc(itemId)
-			.update({ name, description, imageURL: imageURL || null });
+			.update({
+				name,
+				description,
+				imageURL: imageURL || null,
+			});
 		res.json({ message: '상품 수정 완료' });
 	} catch (error) {
 		console.error('상품 수정 오류:', error);
@@ -82,12 +84,25 @@ exports.confirmRental = async (req, res) => {
 	}
 };
 
-// 댓글 조회
+// 댓글 조회 (nickname 포함)
 exports.getComments = async (req, res) => {
 	const { itemId } = req.params;
 	try {
 		const snap = await db.collection('comments').where('itemId', '==', itemId).orderBy('timestamp', 'asc').get();
-		const comments = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+		const comments = await Promise.all(
+			snap.docs.map(async (doc) => {
+				const data = doc.data();
+				const userSnap = await db.collection('users').doc(data.userId).get();
+				const nickname = userSnap.exists ? userSnap.data().nickname : '익명';
+				return {
+					id: doc.id,
+					...data,
+					nickname,
+				};
+			})
+		);
+
 		res.json({ comments });
 	} catch (error) {
 		console.error('댓글 조회 오류:', error);
@@ -118,7 +133,12 @@ exports.getRentalHistory = async (req, res) => {
 	const { itemId } = req.params;
 	try {
 		const snap = await db.collection('rentals').where('itemId', '==', itemId).orderBy('timestamp', 'desc').get();
-		const rentals = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+		const rentals = snap.docs.map((doc) => ({
+			id: doc.id,
+			...doc.data(),
+		}));
+
 		res.json({ rentals });
 	} catch (error) {
 		console.error('대여 기록 조회 오류:', error);

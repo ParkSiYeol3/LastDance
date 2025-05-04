@@ -4,6 +4,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../firebase-config';
+import CommentSection from '../components/CommentSection';
 
 const ItemDetail = () => {
 	const route = useRoute();
@@ -108,6 +109,7 @@ const ItemDetail = () => {
 					<Button title='상품 삭제' color='red' onPress={handleDelete} />
 				</View>
 			)}
+			<CommentSection itemId={itemId} currentUser={currentUser} />
 		</ScrollView>
 	);
 };
