@@ -1,3 +1,4 @@
+// utils/formatTimestamp.js
 export const formatTimestamp = (ts) => {
 	if (!ts || !ts._seconds) return '';
 
