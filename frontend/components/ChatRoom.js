@@ -31,8 +31,9 @@ const ChatRoom = ({ route }) => {
   const [rentalItemId, setRentalItemId] = useState(null);
   const [depositAmount, setDepositAmount] = useState('');
   const [paymentStatus, setPaymentStatus] = useState(null);
+  const [buyerId, setBuyerId] = useState(null);
 
-  const isPaymentComplete = paymentStatus === 'paid' || paymentStatus === 'created';
+  const isPaymentComplete = paymentStatus === 'created';
 
   useEffect(() => {
     AsyncStorage.getItem('userId')
@@ -56,6 +57,10 @@ const ChatRoom = ({ route }) => {
 
         setIsSeller(room.sellerId === userId);
         setRentalItemId(room.rentalItemId);
+
+        // 안전하게 buyerId 설정
+        const buyerUid = room.sellerId === userId ? room.opponent.uid : userId;
+        setBuyerId(buyerUid);
 
         const map = {};
         map[userId] = { profileImage: null };
@@ -85,22 +90,33 @@ const ChatRoom = ({ route }) => {
   }, [userId, roomId]);
 
   const reloadPaymentStatus = async () => {
+    const targetId = isSeller ? buyerId : userId;
+    console.log('🔍 상태 조회 요청:', { targetId, rentalItemId });
+
     try {
       const res = await axios.get(`${API_URL}/api/deposit/status`, {
-        params: { userId, rentalItemId },
+        params: { userId: targetId, rentalItemId },
       });
+      console.log('✅ 결제 상태 응답:', res.data.status);
       setPaymentStatus(res.data.status);
     } catch (err) {
-      console.error('결제 상태 재조회 실패:', err);
+      console.error('❌ 결제 상태 재조회 실패:', err);
     }
   };
 
   useFocusEffect(
     useCallback(() => {
-      if (userId && rentalItemId) {
+      const shouldRun =
+        (isSeller && buyerId && rentalItemId) ||
+        (!isSeller && userId && rentalItemId);
+
+      if (shouldRun) {
+        console.log('🧪 reloadPaymentStatus 실행 조건 만족');
         reloadPaymentStatus();
+      } else {
+        console.log('⚠️ 아직 buyerId 또는 rentalItemId가 준비되지 않음');
       }
-    }, [userId, rentalItemId])
+    }, [userId, buyerId, rentalItemId, isSeller])
   );
 
   const onSend = async () => {
@@ -154,7 +170,6 @@ const ChatRoom = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      {/* ✅ 상단 고정: 보증금 결제 상태 표시 버튼 */}
       <TouchableOpacity
         disabled
         style={{
@@ -173,8 +188,7 @@ const ChatRoom = ({ route }) => {
         </Text>
       </TouchableOpacity>
 
-      {/* 🔵 판매자 전용: 보증금 금액 입력 + 요청 버튼 */}
-      {isSeller && (
+      {isSeller && !isPaymentComplete && (
         <>
           <TextInput
             style={{
@@ -213,14 +227,9 @@ const ChatRoom = ({ route }) => {
         </>
       )}
 
-      {/* 🔵 구매자 전용: 결제하기 버튼 */}
       {!isSeller && (() => {
         const depositMsg = messages.find(m => m.type === 'depositRequest' && m.amount);
-        if (!depositMsg) return null;
-
-        if (isPaymentComplete) {
-          return null;
-        }
+        if (!depositMsg || isPaymentComplete) return null;
 
         return (
           <TouchableOpacity
