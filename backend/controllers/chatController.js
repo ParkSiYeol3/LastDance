@@ -73,8 +73,9 @@ exports.getUserChatRooms = async (req, res) => {
  * 메시지 전송
  */
 exports.sendMessage = async (req, res) => {
-	const { text, senderId } = req.body;
+	const { text, senderId, type = 'text', amount = null } = req.body;
 	const { roomId } = req.params;
+
 	if (!text || !senderId || !roomId) {
 		return res.status(400).json({ error: 'text, senderId, roomId 모두 필요합니다.' });
 	}
@@ -83,9 +84,14 @@ exports.sendMessage = async (req, res) => {
 		const messageData = {
 			senderId,
 			text,
+			type,
 			sentAt: new Date(),
 			isRead: false,
 		};
+
+		if (amount !== null) {
+			messageData.amount = amount; // 🔥 보증금 금액 포함
+		}
 
 		// messages 서브컬렉션에 추가
 		await db.collection('chatRooms').doc(roomId).collection('messages').add(messageData);
@@ -99,7 +105,6 @@ exports.sendMessage = async (req, res) => {
 		res.status(500).json({ error: '메시지 저장 실패' });
 	}
 };
-
 /**
  * 채팅 메시지 조회
  */
@@ -118,6 +123,8 @@ exports.getMessages = async (req, res) => {
 				id: doc.id,
 				senderId: d.senderId,
 				text: d.text,
+				type: d.type || 'text',           // ✅ 추가
+                amount: d.amount || null,         // ✅ 추가
 				sentAt: d.sentAt.toDate().toISOString(),
 				isRead: d.isRead || false,
 			};
@@ -154,45 +161,53 @@ exports.markMessageAsRead = async (req, res) => {
  */
 exports.getChatRoomsWithProfile = async (req, res) => {
 	const currentUserId = req.user.uid;
-
+  
 	try {
-		const snapshot = await db.collection('chatRooms').where('participants', 'array-contains', currentUserId).get();
-
-		const rooms = await Promise.all(
-			snapshot.docs.map(async (doc) => {
-				const roomData = doc.data();
-				const roomId = doc.id;
-				const opponentId = roomData.participants.find((uid) => uid !== currentUserId);
-
-				let opponentProfile = { uid: opponentId, nickname: '알 수 없음', profileImage: null };
-				if (opponentId) {
-					const userDoc = await db.collection('users').doc(opponentId).get();
-					if (userDoc.exists) {
-						const u = userDoc.data();
-						opponentProfile = {
-							uid: opponentId,
-							nickname: u.nickname || '이름없음',
-							profileImage: u.profileImage || null,
-						};
-					}
-				}
-
-				return {
-					id: roomId,
-					rentalItemId: roomData.rentalItemId || null,
-					lastMessage: roomData.lastMessage || '',
-					createdAt: roomData.createdAt || null,
-					opponent: opponentProfile,
-				};
-			})
-		);
-
-		res.json({ rooms });
+	  const snapshot = await db.collection('chatRooms')
+		.where('participants', 'array-contains', currentUserId)
+		.get();
+  
+	  const rooms = await Promise.all(
+		snapshot.docs.map(async (doc) => {
+		  const roomData = doc.data();
+		  const roomId = doc.id;
+		  const opponentId = roomData.participants.find((uid) => uid !== currentUserId);
+  
+		  let opponentProfile = {
+			uid: opponentId,
+			nickname: '알 수 없음',
+			profileImage: null,
+		  };
+  
+		  if (opponentId) {
+			const userDoc = await db.collection('users').doc(opponentId).get();
+			if (userDoc.exists) {
+			  const u = userDoc.data();
+			  opponentProfile = {
+				uid: opponentId,
+				nickname: u.nickname || '이름없음',
+				profileImage: u.profileImage || null,
+			  };
+			}
+		  }
+  
+		  return {
+			id: roomId,
+			sellerId: roomData.sellerId || null,           // ✅ 추가된 부분
+			rentalItemId: roomData.rentalItemId || null,
+			lastMessage: roomData.lastMessage || '',
+			createdAt: roomData.createdAt || null,
+			opponent: opponentProfile,
+		  };
+		})
+	  );
+  
+	  res.json({ rooms });
 	} catch (err) {
-		console.error('❌ 상대방 프로필 포함 조회 실패:', err);
-		res.status(500).json({ error: '채팅방 목록 조회 실패' });
+	  console.error('❌ 상대방 프로필 포함 조회 실패:', err);
+	  res.status(500).json({ error: '채팅방 목록 조회 실패' });
 	}
-};
+  };
 
 /**
  * participants 필드 추가/갱신용

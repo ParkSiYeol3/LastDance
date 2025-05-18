@@ -22,11 +22,17 @@ export async function fetchMessages(roomId) {
 }
 
 /** 메시지 전송 */
-export async function sendMessage(roomId, senderId, text, type = 'text') {
+export async function sendMessage(roomId, senderId, text, type = 'text', amount = null) {
   const token = await getAccessToken();
+  const payload = { text, senderId, type };
+
+  if (amount !== null) {
+    payload.amount = amount; // 🔥 보증금 금액 포함
+  }
+
   const res = await axios.post(
     `${API_URL}/api/chat/rooms/${roomId}/messages`,
-    { text, senderId, type },
+    payload,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   return res.data;

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-
+import { StripeProvider } from '@stripe/stripe-react-native';
 // Firebase
 import { db } from './firebase-config';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
@@ -26,11 +26,16 @@ import MapScreen from './components/Map';
 import SplashScreen from './components/SplashScreen';
 import ItemDetail from './components/ItemDetail';
 import Home from './components/Home'; // ⭐ 새로 분리한 Home 컴포넌트
+import StripeCheckoutScreen from './components/StripeCheckoutScreen'; 
 
 const Stack = createStackNavigator();
 
 export default function App() {
 	return (
+		<StripeProvider
+      publishableKey="pk_test_51RAVRA2MK3G0aVNyAbEK2BYKKnzwmHOsmkvAwTfD0vIP6CkDzb9TD4NdWJR0nTAvep5ig4Or2ZAR1wgUC804qS7U00YrHdeIWy" // 🔑 본인 키 입력
+      urlScheme="tryclothes"
+    >
 		<NavigationContainer>
 			<Stack.Navigator initialRouteName='Splash'>
 				<Stack.Screen name='Splash' component={SplashScreen} />
@@ -43,6 +48,7 @@ export default function App() {
 				<Stack.Screen name='Write' component={Write} />
 				<Stack.Screen name='MyPage' component={MyPage} />
 				<Stack.Screen name='Footer' component={Footer} />
+				<Stack.Screen name="StripeCheckoutScreen" component={StripeCheckoutScreen} />
 				<Stack.Screen name='Settings' component={Settings} />
 				<Stack.Screen name='Deposit' component={Deposit} />
 				<Stack.Screen name='Notice' component={Notice} />
@@ -53,5 +59,6 @@ export default function App() {
 				<Stack.Screen name='ItemDetail' component={ItemDetail} />
 			</Stack.Navigator>
 		</NavigationContainer>
+		</StripeProvider>
 	);
 }

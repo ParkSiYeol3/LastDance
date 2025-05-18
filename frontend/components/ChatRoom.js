@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   TextInput,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
   fetchMessages,
   sendMessage,
@@ -29,8 +29,11 @@ const ChatRoom = ({ route }) => {
   const [inputText, setInputText] = useState('');
   const [isSeller, setIsSeller] = useState(false);
   const [rentalItemId, setRentalItemId] = useState(null);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
-  // 내 UID 로드
+  const isPaymentComplete = paymentStatus === 'paid' || paymentStatus === 'created';
+
   useEffect(() => {
     AsyncStorage.getItem('userId')
       .then(uid => {
@@ -40,21 +43,19 @@ const ChatRoom = ({ route }) => {
       .catch(console.error);
   }, []);
 
-  // 채팅방 + 프로필 + seller 여부
   useEffect(() => {
     if (!userId || !roomId) return;
     (async () => {
       try {
         const token = await AsyncStorage.getItem('accessToken');
-        const res = await axios.get(
-          `${API_URL}/api/chat/rooms/with-profile`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await axios.get(`${API_URL}/api/chat/rooms/with-profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const room = res.data.rooms.find(r => r.id === roomId);
         if (!room) return;
 
-        setIsSeller(room.sellerId === userId);      // 🔥 판매자 여부 판단
-        setRentalItemId(room.rentalItemId);         // 🔥 Stripe 결제용
+        setIsSeller(room.sellerId === userId);
+        setRentalItemId(room.rentalItemId);
 
         const map = {};
         map[userId] = { profileImage: null };
@@ -68,7 +69,6 @@ const ChatRoom = ({ route }) => {
     })();
   }, [userId, roomId]);
 
-  // 메시지 로드 (2초 polling)
   useEffect(() => {
     if (!userId || !roomId) return;
     const load = async () => {
@@ -83,6 +83,25 @@ const ChatRoom = ({ route }) => {
     const iv = setInterval(load, 2000);
     return () => clearInterval(iv);
   }, [userId, roomId]);
+
+  const reloadPaymentStatus = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/deposit/status`, {
+        params: { userId, rentalItemId },
+      });
+      setPaymentStatus(res.data.status);
+    } catch (err) {
+      console.error('결제 상태 재조회 실패:', err);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (userId && rentalItemId) {
+        reloadPaymentStatus();
+      }
+    }, [userId, rentalItemId])
+  );
 
   const onSend = async () => {
     if (!inputText.trim()) return;
@@ -135,41 +154,98 @@ const ChatRoom = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      {/* 🔵 보증금 요청 버튼 (판매자) */}
+      {/* ✅ 상단 고정: 보증금 결제 상태 표시 버튼 */}
+      <TouchableOpacity
+        disabled
+        style={{
+          backgroundColor: isPaymentComplete ? '#4CAF50' : '#FFC107',
+          padding: 10,
+          margin: 10,
+          borderRadius: 8,
+        }}
+      >
+        <Text style={{
+          color: '#fff',
+          fontWeight: 'bold',
+          textAlign: 'center',
+        }}>
+          {isPaymentComplete ? '✅ 보증금 결제 완료!' : '⚠️ 보증금 결제가 필요합니다!'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* 🔵 판매자 전용: 보증금 금액 입력 + 요청 버튼 */}
       {isSeller && (
-        <TouchableOpacity
-          onPress={async () => {
-            await sendMessage(roomId, userId, '보증금 결제를 요청합니다.', 'depositRequest');
-            Alert.alert('알림', '보증금 결제 요청을 전송했습니다.');
-          }}
-          style={{ backgroundColor: '#FF7F50', padding: 10, margin: 10, borderRadius: 6 }}
-        >
-          <Text style={{ color: '#fff', textAlign: 'center' }}>보증금 결제 요청</Text>
-        </TouchableOpacity>
+        <>
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: '#ccc',
+              margin: 10,
+              padding: 8,
+              borderRadius: 6,
+            }}
+            keyboardType="numeric"
+            value={depositAmount}
+            onChangeText={setDepositAmount}
+            placeholder="보증금 금액 입력 (원)"
+          />
+          <TouchableOpacity
+            onPress={async () => {
+              if (!depositAmount) {
+                Alert.alert('입력 오류', '보증금 금액을 입력해주세요.');
+                return;
+              }
+
+              await sendMessage(
+                roomId,
+                userId,
+                `보증금 결제 요청: ${depositAmount}원`,
+                'depositRequest',
+                parseInt(depositAmount)
+              );
+              Alert.alert('알림', '보증금 결제 요청을 전송했습니다.');
+              setDepositAmount('');
+            }}
+            style={{ backgroundColor: '#FF7F50', padding: 10, margin: 10, borderRadius: 6 }}
+          >
+            <Text style={{ color: '#fff', textAlign: 'center' }}>보증금 결제 요청</Text>
+          </TouchableOpacity>
+        </>
       )}
 
-      {/* 🔵 보증금 결제 버튼 (구매자) */}
-      {!isSeller &&
-        messages.some(m => m.type === 'depositRequest') && (
+      {/* 🔵 구매자 전용: 결제하기 버튼 */}
+      {!isSeller && (() => {
+        const depositMsg = messages.find(m => m.type === 'depositRequest' && m.amount);
+        if (!depositMsg) return null;
+
+        if (isPaymentComplete) {
+          return null;
+        }
+
+        return (
           <TouchableOpacity
             onPress={async () => {
               try {
                 const res = await axios.post(`${API_URL}/api/deposit/create-intent`, {
                   userId,
                   rentalItemId,
+                  amount: parseInt(depositMsg.amount),
                 });
                 const { clientSecret } = res.data;
                 navigation.navigate('StripeCheckoutScreen', { clientSecret });
               } catch (err) {
-                console.error('결제 요청 실패:', err);
+                console.error('결제 요청 실패:', err.response?.data || err.message);
                 Alert.alert('오류', '보증금 결제를 시작할 수 없습니다.');
               }
             }}
             style={{ backgroundColor: '#1E90FF', padding: 10, margin: 10, borderRadius: 6 }}
           >
-            <Text style={{ color: '#fff', textAlign: 'center' }}>보증금 결제하기</Text>
+            <Text style={{ color: '#fff', textAlign: 'center' }}>
+              보증금 {depositMsg.amount}원 결제하기
+            </Text>
           </TouchableOpacity>
-        )}
+        );
+      })()}
 
       <FlatList
         data={messages}

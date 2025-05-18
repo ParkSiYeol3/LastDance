@@ -1,7 +1,9 @@
-// components/StripeCheckoutScreen.js
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Alert } from 'react-native';
 import { useStripe } from '@stripe/stripe-react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../firebase-config'; // ✅ API base URL
 
 const StripeCheckoutScreen = ({ route, navigation }) => {
   const { clientSecret } = route.params;
@@ -9,10 +11,9 @@ const StripeCheckoutScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     const initAndPresent = async () => {
-      // 1. PaymentSheet 초기화
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: 'TryClothes', // 상점 이름
+        merchantDisplayName: '이거옷대여',
       });
 
       if (initError) {
@@ -22,13 +23,25 @@ const StripeCheckoutScreen = ({ route, navigation }) => {
         return;
       }
 
-      // 2. PaymentSheet 표시
       const { error: presentError } = await presentPaymentSheet();
       if (presentError) {
         Alert.alert('결제 실패', presentError.message);
         navigation.goBack();
       } else {
         Alert.alert('결제 성공!', '보증금 결제가 완료되었습니다.');
+
+        // ✅ 결제 성공 후 결제 상태 서버에 알림
+        try {
+          const userId = await AsyncStorage.getItem('userId');
+          const rentalItemId = await AsyncStorage.getItem('currentRentalItemId'); // 이 값은 결제 요청 시에 저장해둬야 함
+          await axios.post(`${API_URL}/api/deposit/confirm-payment`, {
+            userId,
+            rentalItemId,
+          });
+        } catch (err) {
+          console.error('결제 상태 업데이트 실패:', err);
+        }
+
         navigation.goBack();
       }
     };
