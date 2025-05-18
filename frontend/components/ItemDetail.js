@@ -4,6 +4,10 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../firebase-config';
+import CommentSection from '../components/CommentSection';
+import RentalHistory from '../components/RentalHistory';
+import EditItemForm from '../components/EditItemForm';
+import { getAuth } from 'firebase/auth';
 
 const ItemDetail = () => {
 	const route = useRoute();
@@ -14,6 +18,8 @@ const ItemDetail = () => {
 	const [currentUser, setCurrentUser] = useState(null);
 	const [itemOwnerName, setItemOwnerName] = useState('');
 	const [rentalRequested, setRentalRequested] = useState(false);
+	const [editing, setEditing] = useState(false);
+	const [loadingChat, setLoadingChat] = useState(false);
 
 	useEffect(() => {
 		loadUserAndItem();
@@ -31,10 +37,9 @@ const ItemDetail = () => {
 
 	const fetchItem = async () => {
 		try {
-			// 백엔드가 item + itemOwnerName 을 같이 내려준다고 가정
 			const res = await axios.get(`${API_URL}/api/items/${itemId}`);
 			setItem(res.data.item);
-			setItemOwnerName(res.data.itemOwnerName); // <-- 이제 여기서 바로 설정
+			setItemOwnerName(res.data.itemOwnerName);
 		} catch (err) {
 			console.error('아이템 불러오기 실패:', err);
 			Alert.alert('오류', '아이템 정보를 불러올 수 없습니다.');
@@ -45,7 +50,14 @@ const ItemDetail = () => {
 		try {
 			const token = await AsyncStorage.getItem('accessToken');
 			const headers = { Authorization: `Bearer ${token}` };
-			await axios.post(`${API_URL}/api/items/${itemId}/rentals`, { requesterId: currentUser.uid, ownerId: item.userId }, { headers });
+			await axios.post(
+				`${API_URL}/api/items/${itemId}/rentals`,
+				{
+					requesterId: currentUser.uid,
+					ownerId: item.userId,
+				},
+				{ headers }
+			);
 			setRentalRequested(true);
 		} catch (error) {
 			console.error('대여 요청 오류:', error.response || error);
@@ -80,9 +92,40 @@ const ItemDetail = () => {
 		]);
 	};
 
+	const handleStartChat = async () => {
+		const auth = getAuth();
+		const user = auth.currentUser;
+
+		if (!user) {
+			Alert.alert('로그인 필요', '채팅을 시작하려면 로그인해야 합니다.');
+			return;
+		}
+
+		try {
+			const token = await user.getIdToken(true); // ← 이 괄호까지 꼭 닫혀야 함
+
+			const res = await axios.post(
+				`${API_URL}/api/chat/start`,
+				{
+					userId1: user.uid,
+					userId2: item.userId,
+					rentalItemId: itemId,
+				},
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				}
+			);
+
+			const { chatRoomId } = res.data;
+			navigation.navigate('ChatRoom', { chatRoomId });
+		} catch (error) {
+			console.error('채팅방 생성 오류:', error);
+			Alert.alert('오류', '채팅방 생성에 실패했습니다.');
+		}
+	};
+
 	const isOwner = currentUser?.uid === item?.userId;
 
-	// 로딩 처리
 	if (!item) {
 		return (
 			<View style={styles.center}>
@@ -91,7 +134,6 @@ const ItemDetail = () => {
 		);
 	}
 
-	// 실제 UI
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
 			<Text style={styles.title}>{item.name}</Text>
@@ -99,15 +141,42 @@ const ItemDetail = () => {
 			<Text style={styles.description}>{item.description}</Text>
 			<Text style={styles.ownerText}>게시자: {itemOwnerName}</Text>
 
-			<View style={styles.buttonGroup}>
-				{isOwner ? <Button title='본인의 물품' disabled /> : <Button title={rentalRequested ? '요청됨!' : '대여 요청하기'} onPress={handleRentalRequest} disabled={rentalRequested} />}
-			</View>
+			{!editing && (
+				<View style={styles.buttonGroup}>
+					{isOwner ? <Button title='본인의 물품' disabled /> : <Button title={rentalRequested ? '요청됨!' : '대여 요청하기'} onPress={handleRentalRequest} disabled={rentalRequested} />}
+				</View>
+			)}
+
+			{isOwner && !editing && (
+				<View style={styles.editButton}>
+					<Button title='상품 수정' onPress={() => setEditing(true)} />
+				</View>
+			)}
 
 			{isOwner && (
 				<View style={styles.deleteButton}>
 					<Button title='상품 삭제' color='red' onPress={handleDelete} />
 				</View>
 			)}
+			{!isOwner && (
+				<View style={styles.buttonGroup}>
+					<Button title={loadingChat ? '채팅 연결 중...' : '채팅하기'} onPress={handleStartChat} disabled={loadingChat} />
+				</View>
+			)}
+
+			{editing && (
+				<EditItemForm
+					item={{ id: itemId, ...item }}
+					onCancel={() => setEditing(false)}
+					onSuccess={async () => {
+						setEditing(false);
+						await fetchItem();
+					}}
+				/>
+			)}
+
+			<CommentSection itemId={itemId} currentUser={currentUser} />
+			<RentalHistory itemId={itemId} />
 		</ScrollView>
 	);
 };
@@ -147,6 +216,10 @@ const styles = StyleSheet.create({
 		color: '#777',
 	},
 	buttonGroup: {
+		width: '80%',
+		marginBottom: 10,
+	},
+	editButton: {
 		width: '80%',
 		marginBottom: 10,
 	},
