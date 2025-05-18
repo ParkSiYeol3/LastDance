@@ -22,11 +22,11 @@ export async function fetchMessages(roomId) {
 }
 
 /** 메시지 전송 */
-export async function sendMessage(roomId, senderId, text) {
+export async function sendMessage(roomId, senderId, text, type = 'text') {
   const token = await getAccessToken();
   const res = await axios.post(
     `${API_URL}/api/chat/rooms/${roomId}/messages`,
-    { text, senderId },
+    { text, senderId, type },
     { headers: { Authorization: `Bearer ${token}` } }
   );
   return res.data;

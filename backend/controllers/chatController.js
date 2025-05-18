@@ -10,42 +10,41 @@ const { doc, getDoc, addDoc, collection, serverTimestamp, query, where, onSnapsh
 exports.startChat = async (req, res) => {
 	const { userId1, userId2, rentalItemId } = req.body;
 	if (!userId1 || !userId2 || !rentalItemId) {
-		return res.status(400).json({ error: 'userId1, userId2, rentalItemId 모두 필요합니다.' });
+	  return res.status(400).json({ error: 'userId1, userId2, rentalItemId 모두 필요합니다.' });
 	}
-
+  
 	try {
-		// 기존 채팅방 확인
-		const snapshot = await db
-			.collection('chatRooms')
-			.where('participants', 'in', [
-				[userId1, userId2],
-				[userId2, userId1],
-			])
-			.where('rentalItemId', '==', rentalItemId)
-			.limit(1)
-			.get();
-
-		if (!snapshot.empty) {
-			const chatRoom = snapshot.docs[0];
-			return res.json({ chatRoomId: chatRoom.id, message: '기존 채팅방 있음' });
-		}
-
-		// 새 채팅방 생성 (Firestore 자동 생성 방식)
-		const newRef = await db.collection('chatRooms').add({
-			rentalItemId,
-			participants: [userId1, userId2],
-			messages: [],
-			createdAt: new Date(),
-		});
-
-		// 생성된 채팅방 ID 반환
-		res.json({ chatRoomId: newRef.id, message: '새 채팅방 생성됨' });
+	  // 기존 채팅방 확인
+	  const snapshot = await db
+		.collection('chatRooms')
+		.where('participants', 'in', [
+		  [userId1, userId2],
+		  [userId2, userId1],
+		])
+		.where('rentalItemId', '==', rentalItemId)
+		.limit(1)
+		.get();
+  
+	  if (!snapshot.empty) {
+		const chatRoom = snapshot.docs[0];
+		return res.json({ chatRoomId: chatRoom.id, message: '기존 채팅방 있음' });
+	  }
+  
+	  // 새 채팅방 생성 (Firestore 자동 생성 방식)
+	  const newRef = await db.collection('chatRooms').add({
+		rentalItemId,
+		participants: [userId1, userId2],
+		sellerId: userId2, // 🔥 userId2를 판매자로 간주
+		messages: [],
+		createdAt: new Date(),
+	  });
+  
+	  res.json({ chatRoomId: newRef.id, message: '새 채팅방 생성됨' });
 	} catch (err) {
-		console.error('❌ 채팅방 생성 오류:', err);
-		res.status(500).json({ error: err.message });
+	  console.error('❌ 채팅방 생성 오류:', err);
+	  res.status(500).json({ error: err.message });
 	}
-};
-
+  };
 /**
  * 나의 채팅방 목록 조회
  */
