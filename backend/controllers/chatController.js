@@ -30,15 +30,14 @@ exports.startChat = async (req, res) => {
 		return res.json({ chatRoomId: chatRoom.id, message: '기존 채팅방 있음' });
 	  }
   
-	  // 새 채팅방 생성 (Firestore 자동 생성 방식)
 	  const newRef = await db.collection('chatRooms').add({
-		rentalItemId,
-		participants: [userId1, userId2],
-		sellerId: userId2, // 🔥 userId2를 판매자로 간주
-		messages: [],
-		createdAt: new Date(),
-	  });
-  
+      rentalItemId,
+      participants: [userId1, userId2],
+      sellerId: userId2,        // 판매자
+      buyerId: userId1,         // 구매자
+      lastMessage: '',          // 초기화
+       createdAt: new Date(),    // 타임스탬프
+      });
 	  res.json({ chatRoomId: newRef.id, message: '새 채팅방 생성됨' });
 	} catch (err) {
 	  console.error('❌ 채팅방 생성 오류:', err);
