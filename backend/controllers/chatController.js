@@ -4,46 +4,56 @@ const { v4: uuidv4 } = require('uuid');
 const { doc, getDoc, addDoc, collection, serverTimestamp, query, where, onSnapshot, deleteDoc, updateDoc, orderBy, getDocs } = require('firebase-admin/firestore');
 
 /**
- * 채팅방 생성 또는 기존 채팅방 반환
+ * 채팅방 생성 
  */
 // controllers/chatController.js
 exports.startChat = async (req, res) => {
-	const { userId1, userId2, rentalItemId } = req.body;
-	if (!userId1 || !userId2 || !rentalItemId) {
-	  return res.status(400).json({ error: 'userId1, userId2, rentalItemId 모두 필요합니다.' });
-	}
-  
-	try {
-	  // 기존 채팅방 확인
-	  const snapshot = await db
-		.collection('chatRooms')
-		.where('participants', 'in', [
-		  [userId1, userId2],
-		  [userId2, userId1],
-		])
-		.where('rentalItemId', '==', rentalItemId)
-		.limit(1)
-		.get();
-  
-	  if (!snapshot.empty) {
-		const chatRoom = snapshot.docs[0];
-		return res.json({ chatRoomId: chatRoom.id, message: '기존 채팅방 있음' });
-	  }
-  
-	  const newRef = await db.collection('chatRooms').add({
+  const { userId1, userId2, rentalItemId } = req.body;
+
+  if (!userId1 || !userId2 || !rentalItemId) {
+    return res.status(400).json({ error: 'userId1, userId2, rentalItemId 모두 필요합니다.' });
+  }
+
+  try {
+    const snapshot = await db
+      .collection('chatRooms')
+      .where('participants', 'in', [
+        [userId1, userId2],
+        [userId2, userId1],
+      ])
+      .where('rentalItemId', '==', rentalItemId)
+      .limit(1)
+      .get();
+
+    if (!snapshot.empty) {
+      const chatRoom = snapshot.docs[0];
+
+      // ✅ buyerId 없으면 보완 저장
+      if (!chatRoom.data().buyerId) {
+        await chatRoom.ref.update({
+          buyerId: userId1, // 항상 userId1을 구매자로 저장
+        });
+      }
+
+      return res.json({ chatRoomId: chatRoom.id, message: '기존 채팅방 있음' });
+    }
+
+    // ✅ 새 채팅방 생성 (buyerId 포함)
+    const newRef = await db.collection('chatRooms').add({
       rentalItemId,
       participants: [userId1, userId2],
-      sellerId: userId2,        // 판매자
-      buyerId: userId1,         // 구매자
-      lastMessage: '',          // 초기화
-       createdAt: new Date(),    // 타임스탬프
-      });
-	  res.json({ chatRoomId: newRef.id, message: '새 채팅방 생성됨' });
-	} catch (err) {
-	  console.error('❌ 채팅방 생성 오류:', err);
-	  res.status(500).json({ error: err.message });
-	}
-  };
+      sellerId: userId2,
+      buyerId: userId1,
+      lastMessage: '',
+      createdAt: new Date(),
+    });
+
+    res.json({ chatRoomId: newRef.id, message: '새 채팅방 생성됨' });
+  } catch (err) {
+    console.error('❌ 채팅방 생성 오류:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
 /**
  * 나의 채팅방 목록 조회
  */

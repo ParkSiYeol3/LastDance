@@ -117,12 +117,12 @@ const ItemDetail = () => {
 			);
 
 			const { chatRoomId } = res.data;
-			navigation.navigate('ChatRoom', { chatRoomId });
-		} catch (error) {
-			console.error('채팅방 생성 오류:', error);
-			Alert.alert('오류', '채팅방 생성에 실패했습니다.');
-		}
-	};
+			 navigation.navigate('ChatRoom', { roomId: chatRoomId });
+  } catch (error) {
+    console.error('채팅방 생성 오류:', error);
+    Alert.alert('오류', '채팅방 생성에 실패했습니다.');
+  }
+};
 
 	const isOwner = currentUser?.uid === item?.userId;
 
