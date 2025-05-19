@@ -1,3 +1,5 @@
+// ✅ ChatRoom.js (전체 수정본)
+
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
@@ -11,7 +13,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import {
   fetchMessages,
   sendMessage,
@@ -33,7 +35,7 @@ const ChatRoom = ({ route }) => {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [buyerId, setBuyerId] = useState(null);
 
-  const isPaymentComplete = paymentStatus === 'created';
+  const isPaymentComplete = ['created', 'succeeded', 'paid'].includes(paymentStatus);
 
   useEffect(() => {
     AsyncStorage.getItem('userId')
@@ -44,35 +46,64 @@ const ChatRoom = ({ route }) => {
       .catch(console.error);
   }, []);
 
-  useEffect(() => {
-    if (!userId || !roomId) return;
-    (async () => {
-      try {
-        const token = await AsyncStorage.getItem('accessToken');
-        const res = await axios.get(`${API_URL}/api/chat/rooms/with-profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const room = res.data.rooms.find(r => r.id === roomId);
-        if (!room) return;
+useEffect(() => {
+  if (!userId || !roomId) return;
+  (async () => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      const res = await axios.get(`${API_URL}/api/chat/rooms/with-profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const room = res.data.rooms.find(r => r.id === roomId);
+      if (!room) return;
 
-        setIsSeller(room.sellerId === userId);
-        setRentalItemId(room.rentalItemId);
+      setIsSeller(room.sellerId === userId);
+      setRentalItemId(room.rentalItemId);
 
-        // 안전하게 buyerId 설정
-        const buyerUid = room.sellerId === userId ? room.opponent.uid : userId;
-        setBuyerId(buyerUid);
-
-        const map = {};
-        map[userId] = { profileImage: null };
-        map[room.opponent.uid] = {
-          profileImage: room.opponent.profileImage?.replace(/^"(.*)"$/, '$1'),
-        };
-        setParticipants(map);
-      } catch (err) {
-        console.error('방 프로필 조회 실패:', err);
+      // ✅ 이 줄이 없으면 buyerId가 undefined로 유지됨
+      if (room.buyerId) {
+        setBuyerId(room.buyerId);
+      } else {
+        console.warn('❗ buyerId 필드가 없음! fallback 처리해야 함');
       }
-    })();
-  }, [userId, roomId]);
+
+      // 나머지 파싱
+      const map = {};
+      map[userId] = { profileImage: null };
+      map[room.opponent.uid] = {
+        profileImage: room.opponent.profileImage?.replace(/^\"(.*)\"$/, '$1'),
+      };
+      setParticipants(map);
+    } catch (err) {
+      console.error('방 프로필 조회 실패:', err);
+    }
+  })();
+}, [userId, roomId]);
+
+  useEffect(() => {
+  const ready =
+    typeof isSeller === 'boolean' &&
+    rentalItemId &&
+    ((isSeller && buyerId) || (!isSeller && userId));
+
+  if (ready) {
+    console.log('🚀 결제 상태 조회 조건 충족됨 → 실행!');
+    reloadPaymentStatus();
+  } else {
+    console.log('⏳ 아직 조건 불충분:', { isSeller, userId, buyerId, rentalItemId });
+  }
+}, [isSeller, userId, buyerId, rentalItemId]);
+
+  const reloadPaymentStatus = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/deposit/status`, {
+        params: { userId: isSeller ? buyerId : userId, rentalItemId },
+      });
+      setPaymentStatus(res.data.status);
+    } catch (err) {
+      console.error('결제 상태 재조회 실패:', err);
+    }
+  };
 
   useEffect(() => {
     if (!userId || !roomId) return;
@@ -88,36 +119,6 @@ const ChatRoom = ({ route }) => {
     const iv = setInterval(load, 2000);
     return () => clearInterval(iv);
   }, [userId, roomId]);
-
-  const reloadPaymentStatus = async () => {
-    const targetId = isSeller ? buyerId : userId;
-    console.log('🔍 상태 조회 요청:', { targetId, rentalItemId });
-
-    try {
-      const res = await axios.get(`${API_URL}/api/deposit/status`, {
-        params: { userId: targetId, rentalItemId },
-      });
-      console.log('✅ 결제 상태 응답:', res.data.status);
-      setPaymentStatus(res.data.status);
-    } catch (err) {
-      console.error('❌ 결제 상태 재조회 실패:', err);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      const shouldRun =
-        (isSeller && buyerId && rentalItemId) ||
-        (!isSeller && userId && rentalItemId);
-
-      if (shouldRun) {
-        console.log('🧪 reloadPaymentStatus 실행 조건 만족');
-        reloadPaymentStatus();
-      } else {
-        console.log('⚠️ 아직 buyerId 또는 rentalItemId가 준비되지 않음');
-      }
-    }, [userId, buyerId, rentalItemId, isSeller])
-  );
 
   const onSend = async () => {
     if (!inputText.trim()) return;
@@ -170,34 +171,41 @@ const ChatRoom = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        disabled
-        style={{
-          backgroundColor: isPaymentComplete ? '#4CAF50' : '#FFC107',
-          padding: 10,
-          margin: 10,
-          borderRadius: 8,
-        }}
-      >
-        <Text style={{
-          color: '#fff',
-          fontWeight: 'bold',
-          textAlign: 'center',
-        }}>
-          {isPaymentComplete ? '✅ 보증금 결제 완료!' : '⚠️ 보증금 결제가 필요합니다!'}
-        </Text>
-      </TouchableOpacity>
+      {/* 상태 배너 */}
+{paymentStatus !== null && (
+  <TouchableOpacity
+    disabled
+    style={{
+      backgroundColor:
+        paymentStatus === 'refunded'
+          ? '#9ACD32'
+          : isPaymentComplete
+          ? '#4CAF50'
+          : '#FFC107',
+      padding: 10,
+      margin: 10,
+      borderRadius: 8,
+    }}
+  >
+    <Text style={{
+      color: '#fff',
+      fontWeight: 'bold',
+      textAlign: 'center',
+    }}>
+      {paymentStatus === 'refunded'
+        ? '✅ 보증금이 환급되었습니다!'
+        : isPaymentComplete
+        ? '✅ 보증금 결제 완료!'
+        : '⚠️ 보증금 결제가 필요합니다!'}
+    </Text>
+  </TouchableOpacity>
+)}
 
-      {isSeller && !isPaymentComplete && (
+      {/* 판매자: 결제 요청 UI */}
+      {isSeller && paymentStatus === 'none' && (
         <>
           <TextInput
-            style={{
-              borderWidth: 1,
-              borderColor: '#ccc',
-              margin: 10,
-              padding: 8,
-              borderRadius: 6,
-            }}
+            style={{ borderWidth: 1, borderColor: '#ccc', margin: 10, padding: 8, borderRadius: 6 }}
             keyboardType="numeric"
             value={depositAmount}
             onChangeText={setDepositAmount}
@@ -205,18 +213,8 @@ const ChatRoom = ({ route }) => {
           />
           <TouchableOpacity
             onPress={async () => {
-              if (!depositAmount) {
-                Alert.alert('입력 오류', '보증금 금액을 입력해주세요.');
-                return;
-              }
-
-              await sendMessage(
-                roomId,
-                userId,
-                `보증금 결제 요청: ${depositAmount}원`,
-                'depositRequest',
-                parseInt(depositAmount)
-              );
+              if (!depositAmount) return Alert.alert('입력 오류', '보증금 금액을 입력해주세요.');
+              await sendMessage(roomId, userId, `보증금 결제 요청: ${depositAmount}원`, 'depositRequest', parseInt(depositAmount));
               Alert.alert('알림', '보증금 결제 요청을 전송했습니다.');
               setDepositAmount('');
             }}
@@ -227,9 +225,10 @@ const ChatRoom = ({ route }) => {
         </>
       )}
 
-      {!isSeller && (() => {
+      {/* 구매자: 결제 버튼 */}
+      {!isSeller && !isPaymentComplete && (() => {
         const depositMsg = messages.find(m => m.type === 'depositRequest' && m.amount);
-        if (!depositMsg || isPaymentComplete) return null;
+        if (!depositMsg) return null;
 
         return (
           <TouchableOpacity
@@ -263,6 +262,12 @@ const ChatRoom = ({ route }) => {
         renderItem={renderItem}
         contentContainerStyle={{ padding: 10 }}
       />
+      
+      {isSeller && (
+  <Text style={{ color: 'black', textAlign: 'center', marginVertical: 10 }}>
+    판매자 화면 - 결제 상태: {paymentStatus}
+  </Text>
+)}
 
       <View style={styles.inputContainer}>
         <TextInput

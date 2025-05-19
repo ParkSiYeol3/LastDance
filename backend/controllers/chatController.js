@@ -194,6 +194,7 @@ exports.getChatRoomsWithProfile = async (req, res) => {
 		  return {
 			id: roomId,
 			sellerId: roomData.sellerId || null,           // ✅ 추가된 부분
+			buyerId: roomData.buyerId || null, // ✅ 요 줄 추가!
 			rentalItemId: roomData.rentalItemId || null,
 			lastMessage: roomData.lastMessage || '',
 			createdAt: roomData.createdAt || null,
