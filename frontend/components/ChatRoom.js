@@ -201,6 +201,30 @@ useEffect(() => {
   </TouchableOpacity>
 )}
 
+{isSeller && isPaymentComplete && paymentStatus !== 'refunded' && (
+  <TouchableOpacity
+    onPress={async () => {
+      try {
+        const res = await axios.post(`${API_URL}/api/deposit/auto-refund`, {
+          userId: buyerId,
+          rentalItemId,
+        });
+
+        if (res.data.message) {
+          Alert.alert('✅ 환불 완료', '보증금이 환급되었습니다.');
+          setPaymentStatus('refunded');
+        }
+      } catch (err) {
+        console.error('❌ 환불 실패:', err.response?.data || err.message);
+        Alert.alert('오류', '환불 처리 중 문제가 발생했습니다.');
+      }
+    }}
+    style={{ backgroundColor: '#228B22', padding: 10, margin: 10, borderRadius: 6 }}
+  >
+    <Text style={{ color: '#fff', textAlign: 'center' }}>거래 종료 (보증금 환급)</Text>
+  </TouchableOpacity>
+)}
+
       {/* 판매자: 결제 요청 UI */}
       {isSeller && paymentStatus === 'none' && (
         <>
