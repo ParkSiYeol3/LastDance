@@ -250,7 +250,7 @@ useEffect(() => {
       )}
 
       {/* 구매자: 결제 버튼 */}
-      {!isSeller && !isPaymentComplete && (() => {
+      {!isSeller && !isPaymentComplete &&  paymentStatus !== 'refunded' && (() => {
         const depositMsg = messages.find(m => m.type === 'depositRequest' && m.amount);
         if (!depositMsg) return null;
 
