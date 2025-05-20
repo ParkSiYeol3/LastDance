@@ -102,27 +102,28 @@ exports.getWrittenReviews = async (req, res) => {
 
 // 평균 별점 계산
 exports.getAverageRating = async (req, res) => {
-  const { userId } = req.params;
+  const targetUserId = req.params.userId;
 
   try {
-    const snapshot = await db.collection('reviews')
-      .where('targetUserId', '==', userId)
+    const snapshot = await db
+      .collection('reviews')
+      .where('targetUserId', '==', targetUserId)
       .get();
 
-    const reviews = snapshot.docs.map(doc => doc.data());
-    if (reviews.length === 0) {
-      return res.json({ average: 0, count: 0 });
-    }
+    const ratings = snapshot.docs.map(doc => doc.data().rating).filter(Boolean);
 
-    const total = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
-    const average = total / reviews.length;
+    const average =
+      ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
+        : 0;
 
-    res.json({ average: parseFloat(average.toFixed(2)), count: reviews.length });
+    res.json({ average: Math.round(average * 10) / 10, count: ratings.length });
   } catch (err) {
-    console.error('평균 별점 조회 실패:', err);
-    res.status(500).json({ error: '평균 별점 계산 오류' });
+    console.error('평균 별점 계산 실패:', err);
+    res.status(500).json({ error: '평균 별점 조회 실패' });
   }
 };
+
 
 //리뷰 중복 작성 방지 
 exports.checkReviewExists = async (req, res) => {

@@ -20,24 +20,37 @@ const { height } = Dimensions.get('window');
 
 const ChatList = () => {
   const [chatRooms, setChatRooms] = useState([]);
+  const [averageRatings, setAverageRatings] = useState({});
   const navigation = useNavigation();
 
   useEffect(() => {
     const fetchChatRooms = async () => {
       try {
-        // 토큰 가져오기
         const token = await AsyncStorage.getItem('accessToken');
         if (!token) {
           Alert.alert('오류', '로그인이 필요합니다.');
           return;
         }
 
-        // ===== 프로필 포함된 채팅방 목록 조회 =====
         const res = await axios.get(
           `${API_URL}/api/chat/rooms/with-profile`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setChatRooms(res.data.rooms || []);
+        const rooms = res.data.rooms || [];
+        setChatRooms(rooms);
+
+        // 평균 별점 조회
+        const promises = rooms.map(room =>
+          axios.get(`${API_URL}/api/reviews/average/${room.opponent.uid}`)
+        );
+        const results = await Promise.allSettled(promises);
+        const ratings = {};
+        results.forEach((res, i) => {
+          if (res.status === 'fulfilled') {
+            ratings[rooms[i].opponent.uid] = res.value.data;
+          }
+        });
+        setAverageRatings(ratings);
       } catch (err) {
         console.error('채팅방 목록 조회 실패:', err);
         Alert.alert('오류', '채팅방 목록을 불러오지 못했습니다.');
@@ -48,7 +61,6 @@ const ChatList = () => {
   }, []);
 
   const renderItem = ({ item }) => {
-    // createdAt 이 Timestamp 객체라면 seconds로, 아니라면 Date 문자열로 처리
     const time = item.createdAt
       ? new Date(
           item.createdAt._seconds
@@ -56,6 +68,8 @@ const ChatList = () => {
             : item.createdAt
         ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : '';
+
+    const rating = averageRatings[item.opponent.uid];
 
     return (
       <TouchableOpacity
@@ -71,6 +85,11 @@ const ChatList = () => {
           profileImageUrl={item.opponent?.profileImage || ''}
           unreadCount={item.unreadCount ?? 0}
         />
+        {rating && (
+          <Text style={styles.ratingText}>
+            ⭐ {rating.average}점 ({rating.count}명)
+          </Text>
+        )}
       </TouchableOpacity>
     );
   };
@@ -106,4 +125,5 @@ const styles = StyleSheet.create({
   },
   footer: { position: 'absolute', bottom: 0, width: '100%', height: height * 0.115 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  ratingText: { fontSize: 14, color: '#666', marginLeft: 12, marginBottom: 8 },
 });
