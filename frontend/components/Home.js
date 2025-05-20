@@ -3,6 +3,7 @@ import { View, Text, TextInput, FlatList, Image, StyleSheet, TouchableOpacity } 
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase-config'; // Firebase Firestore 연결
 import Footer from './Footer';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Home = ({ navigation }) => {
 	const [posts, setPosts] = useState([]);
@@ -11,7 +12,6 @@ const Home = ({ navigation }) => {
 		fetchPosts();
 	}, []);
 
-	
 	const fetchPosts = async () => {
 		try {
 			const q = query(collection(db, 'items'), orderBy('timestamp', 'desc'));
@@ -72,7 +72,10 @@ const Home = ({ navigation }) => {
 
 			{/* 글쓰기 버튼 */}
 			<TouchableOpacity style={styles.writeButton} onPress={() => navigation.navigate('Write')}>
-				<Text style={styles.writeText}>글쓰기</Text>
+				<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+					<Icon name='edit' size={20} color='#fff' style={{ marginRight: 6 }} />
+					<Text style={styles.writeText}>글쓰기</Text>
+				</View>
 			</TouchableOpacity>
 
 			{/* 하단 버튼 */}
@@ -171,13 +174,16 @@ const styles = StyleSheet.create({
 		color: '#555',
 	},
 	writeButton: {
-		position: 'absolute',
+		position: 'relative',
 		bottom: 80,
 		right: 20,
 		backgroundColor: '#3371EF',
-		borderRadius: 10,
+		borderRadius: 30,
 		paddingVertical: 10,
-		paddingHorizontal: 18,
+		paddingHorizontal: 16,
+		elevation: 4,
+		flexDirection: 'row',
+		alignItems: 'center',
 	},
 	writeText: {
 		color: '#fff',

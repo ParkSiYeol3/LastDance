@@ -8,6 +8,9 @@ import CommentSection from '../components/CommentSection';
 import RentalHistory from '../components/RentalHistory';
 import EditItemForm from '../components/EditItemForm';
 import { getAuth } from 'firebase/auth';
+import * as Location from 'expo-location';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase-config';
 
 const ItemDetail = () => {
 	const route = useRoute();
@@ -20,10 +23,32 @@ const ItemDetail = () => {
 	const [rentalRequested, setRentalRequested] = useState(false);
 	const [editing, setEditing] = useState(false);
 	const [loadingChat, setLoadingChat] = useState(false);
+	const [userLocation, setUserLocation] = useState(null);
 
 	useEffect(() => {
 		loadUserAndItem();
+		getUserLocation();
 	}, []);
+
+	useEffect(() => {
+		if (currentUser) {
+			checkRentalStatus();
+		}
+	}, [currentUser]);
+
+	const getUserLocation = async () => {
+		try {
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== 'granted') {
+				console.warn('위치 권한 거부됨');
+				return;
+			}
+			const loc = await Location.getCurrentPositionAsync({});
+			setUserLocation(loc.coords);
+		} catch (err) {
+			console.error('위치 정보 가져오기 실패:', err);
+		}
+	};
 
 	const loadUserAndItem = async () => {
 		try {
@@ -46,6 +71,18 @@ const ItemDetail = () => {
 		}
 	};
 
+	const checkRentalStatus = async () => {
+		try {
+			const q = query(collection(db, 'rentals'), where('itemId', '==', itemId), where('requesterId', '==', currentUser.uid), where('status', 'in', ['pending', 'accepted']));
+			const snapshot = await getDocs(q);
+			if (!snapshot.empty) {
+				setRentalRequested(true);
+			}
+		} catch (err) {
+			console.error('요청 상태 확인 실패:', err);
+		}
+	};
+
 	const handleRentalRequest = async () => {
 		try {
 			const token = await AsyncStorage.getItem('accessToken');
@@ -59,6 +96,7 @@ const ItemDetail = () => {
 				{ headers }
 			);
 			setRentalRequested(true);
+			Alert.alert('요청 완료', '대여 요청이 전송되었습니다.');
 		} catch (error) {
 			console.error('대여 요청 오류:', error.response || error);
 			Alert.alert('오류', '대여 요청에 실패했습니다.');
@@ -102,8 +140,7 @@ const ItemDetail = () => {
 		}
 
 		try {
-			const token = await user.getIdToken(true); // ← 이 괄호까지 꼭 닫혀야 함
-
+			const token = await user.getIdToken(true);
 			const res = await axios.post(
 				`${API_URL}/api/chat/start`,
 				{
@@ -117,19 +154,28 @@ const ItemDetail = () => {
 			);
 
 			const { chatRoomId } = res.data;
-			 navigation.navigate('ChatRoom', { roomId: chatRoomId });
-  } catch (error) {
-    console.error('채팅방 생성 오류:', error);
-    Alert.alert('오류', '채팅방 생성에 실패했습니다.');
-  }
-};
+			navigation.navigate('ChatRoom', { roomId: chatRoomId });
+		} catch (error) {
+			console.error('채팅방 생성 오류:', error);
+			Alert.alert('오류', '채팅방 생성에 실패했습니다.');
+		}
+	};
 
 	const isOwner = currentUser?.uid === item?.userId;
+
+	const getDistance = (lat1, lon1, lat2, lon2) => {
+		const R = 6371;
+		const dLat = ((lat2 - lat1) * Math.PI) / 180;
+		const dLon = ((lon2 - lon1) * Math.PI) / 180;
+		const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+		return R * c;
+	};
 
 	if (!item) {
 		return (
 			<View style={styles.center}>
-				<Text>로딩 중...</Text>
+				<Text>로딩 중.</Text>
 			</View>
 		);
 	}
@@ -143,7 +189,13 @@ const ItemDetail = () => {
 
 			{!editing && (
 				<View style={styles.buttonGroup}>
-					{isOwner ? <Button title='본인의 물품' disabled /> : <Button title={rentalRequested ? '요청됨!' : '대여 요청하기'} onPress={handleRentalRequest} disabled={rentalRequested} />}
+					{isOwner ? (
+						<Button title='본인의 물품' disabled />
+					) : rentalRequested ? (
+						<Text style={{ fontSize: 16, color: 'green' }}>요청됨!</Text>
+					) : (
+						<Button title='대여 요청하기' onPress={handleRentalRequest} />
+					)}
 				</View>
 			)}
 
@@ -158,9 +210,10 @@ const ItemDetail = () => {
 					<Button title='상품 삭제' color='red' onPress={handleDelete} />
 				</View>
 			)}
+
 			{!isOwner && (
 				<View style={styles.buttonGroup}>
-					<Button title={loadingChat ? '채팅 연결 중...' : '채팅하기'} onPress={handleStartChat} disabled={loadingChat} />
+					<Button title={loadingChat ? '채팅 연결 중.' : '채팅하기'} onPress={handleStartChat} disabled={loadingChat} />
 				</View>
 			)}
 
@@ -173,6 +226,10 @@ const ItemDetail = () => {
 						await fetchItem();
 					}}
 				/>
+			)}
+
+			{userLocation && item.latitude && item.longitude && (
+				<Text style={styles.distanceText}>📍 나와의 거리: {getDistance(userLocation.latitude, userLocation.longitude, item.latitude, item.longitude).toFixed(2)}km</Text>
 			)}
 
 			<CommentSection itemId={itemId} currentUser={currentUser} />
@@ -226,5 +283,10 @@ const styles = StyleSheet.create({
 	deleteButton: {
 		width: '80%',
 		marginTop: 10,
+	},
+	distanceText: {
+		fontSize: 14,
+		color: '#555',
+		marginBottom: 10,
 	},
 });

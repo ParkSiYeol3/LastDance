@@ -52,20 +52,34 @@ document.addEventListener('DOMContentLoaded', () => {
 			return;
 		}
 
-		try {
-			await addDoc(collection(db, 'items'), {
-				name,
-				description,
-				imageURL,
-				userId: currentUser.uid,
-				timestamp: serverTimestamp(),
-			});
+		// 위치 정보 요청 및 Firestore 저장
+		navigator.geolocation.getCurrentPosition(
+			async (position) => {
+				const latitude = position.coords.latitude;
+				const longitude = position.coords.longitude;
 
-			alert('상품이 등록되었습니다!');
-			window.location.href = 'index.html';
-		} catch (error) {
-			console.error('상품 등록 오류:', error);
-			alert('상품 등록에 실패했습니다.');
-		}
+				try {
+					await addDoc(collection(db, 'items'), {
+						name,
+						description,
+						imageURL,
+						userId: currentUser.uid,
+						latitude,
+						longitude,
+						timestamp: serverTimestamp(),
+					});
+
+					alert('상품이 등록되었습니다!');
+					window.location.href = 'index.html';
+				} catch (error) {
+					console.error('상품 등록 오류:', error);
+					alert('상품 등록에 실패했습니다.');
+				}
+			},
+			(err) => {
+				console.error('위치 정보 오류:', err);
+				alert('위치 정보를 가져오지 못했습니다. 브라우저 위치 권한을 확인해주세요.');
+			}
+		);
 	});
 });
