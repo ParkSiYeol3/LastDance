@@ -9,9 +9,10 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useRoute } from '@react-navigation/native'; // ✅ 수정: expo-router → native router
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '../firebase-config'; // ✅ 추가
+import { API_URL } from '../firebase-config';
+import axios from 'axios';
 
 const StarRating = ({ rating, onChange }) => {
   const stars = [1, 2, 3, 4, 5];
@@ -27,7 +28,14 @@ const StarRating = ({ rating, onChange }) => {
 };
 
 export default function ReviewForm() {
-  const { targetUserId, targetNickname, isSeller, rentalItemId } = useLocalSearchParams();
+  const route = useRoute();
+  const {
+    targetUserId,
+    targetNickname,
+    isSeller,
+    rentalItemId,
+  } = route.params;
+
   const [rating, setRating] = useState(0);
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
@@ -59,31 +67,30 @@ export default function ReviewForm() {
       return;
     }
 
-    try {
-      const res = await fetch(`${API_URL}/api/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reviewerId,
-          targetUserId,
-          role: isSeller ? 'seller' : 'buyer',
-          rating,
-          summary,
-          content,
-          tags,
-          rentalItemId,
-        }),
-      });
+    const payload = {
+      reviewerId,
+      targetUserId,
+      role: isSeller ? 'seller' : 'buyer',
+      rating,
+      summary,
+      content,
+      tags,
+      rentalItemId,
+    };
 
-      if (res.ok) {
+    console.log('📦 후기 전송 데이터:', payload); // 🔍 디버깅용
+
+    try {
+      const res = await axios.post(`${API_URL}/api/reviews`, payload);
+
+      if (res.status === 201) {
         Alert.alert('후기 등록 완료');
       } else {
-        const error = await res.text();
-        throw new Error(error);
+        throw new Error(res.data?.error || '알 수 없는 오류');
       }
     } catch (err) {
+      console.error('🚨 후기 등록 오류:', err);
       Alert.alert('후기 등록 중 오류 발생');
-      console.error(err);
     }
   };
 

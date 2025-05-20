@@ -193,19 +193,29 @@ const ChatRoom = ({ route }) => {
   };
 
   const handleNavigateToReview = () => {
-    const targetUserId = isSeller ? buyerId : participants[buyerId]?.uid || buyerId;
-    const targetNickname = isSeller
-      ? participants[buyerId]?.nickname || '대여자'
-      : participants[userId]?.nickname || '판매자';
+  const targetUserId = isSeller
+    ? buyerId
+    : (participants[buyerId]?.uid) || buyerId; // 괄호 추가로 우선순위 보장
 
-    navigation.navigate('ReviewForm', {
-      targetUserId,
-      targetNickname,
-      isSeller,
-      rentalItemId,
-    });
-  };
+  const targetNickname = isSeller
+    ? participants[buyerId]?.nickname || '대여자'
+    : participants[userId]?.nickname || '판매자';
 
+  // 디버깅 로그 (개발 중에만 사용)
+  console.log('🔁 후기 작성 이동:', {
+    targetUserId,
+    targetNickname,
+    rentalItemId,
+    isSeller,
+  });
+
+  navigation.navigate('ReviewForm', {
+    targetUserId,
+    targetNickname,
+    isSeller,
+    rentalItemId,
+  });
+};
   return (
     <View style={styles.container}>
       {/* 상태 배너 */}
