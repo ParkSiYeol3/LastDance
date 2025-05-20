@@ -9,7 +9,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useRoute } from '@react-navigation/native'; // ✅ 수정: expo-router → native router
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../firebase-config';
 import axios from 'axios';
@@ -29,6 +29,8 @@ const StarRating = ({ rating, onChange }) => {
 
 export default function ReviewForm() {
   const route = useRoute();
+  const navigation = useNavigation();
+
   const {
     targetUserId,
     targetNickname,
@@ -78,19 +80,24 @@ export default function ReviewForm() {
       rentalItemId,
     };
 
-    console.log('📦 후기 전송 데이터:', payload); // 🔍 디버깅용
+    console.log('📦 후기 전송 데이터:', payload);
 
     try {
       const res = await axios.post(`${API_URL}/api/reviews`, payload);
 
       if (res.status === 201) {
-        Alert.alert('후기 등록 완료');
+        Alert.alert('후기 등록 완료', '', [
+          {
+            text: '확인',
+            onPress: () => navigation.goBack(), // ✅ 등록 후 이전 화면(채팅방)으로 이동
+          },
+        ]);
       } else {
         throw new Error(res.data?.error || '알 수 없는 오류');
       }
     } catch (err) {
       console.error('🚨 후기 등록 오류:', err);
-      Alert.alert('후기 등록 중 오류 발생');
+      Alert.alert('후기 등록 중 오류 발생', err?.message || '서버 오류');
     }
   };
 

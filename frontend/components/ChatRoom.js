@@ -1,5 +1,5 @@
 // ChatRoom.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   TextInput,
@@ -12,7 +12,10 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
+import {
+  useNavigation,
+  useFocusEffect,
+} from '@react-navigation/native';
 import {
   fetchMessages,
   sendMessage,
@@ -104,6 +107,18 @@ const ChatRoom = ({ route }) => {
     }
   }, [isSeller, userId, buyerId, rentalItemId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (
+        typeof isSeller === 'boolean' &&
+        rentalItemId &&
+        ((isSeller && buyerId) || (!isSeller && userId))
+      ) {
+        checkReviewSubmitted();
+      }
+    }, [isSeller, buyerId, userId, rentalItemId])
+  );
+
   const reloadPaymentStatus = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/deposit/status`, {
@@ -193,58 +208,19 @@ const ChatRoom = ({ route }) => {
   };
 
   const handleNavigateToReview = () => {
-  const targetUserId = isSeller
-    ? buyerId
-    : (participants[buyerId]?.uid) || buyerId; // 괄호 추가로 우선순위 보장
+    const targetUserId = Object.keys(participants).find(uid => uid !== userId);
+    const targetNickname = participants[targetUserId]?.nickname || '상대방';
 
-  const targetNickname = isSeller
-    ? participants[buyerId]?.nickname || '대여자'
-    : participants[userId]?.nickname || '판매자';
+    navigation.navigate('ReviewForm', {
+      targetUserId,
+      targetNickname,
+      isSeller,
+      rentalItemId,
+    });
+  };
 
-  // 디버깅 로그 (개발 중에만 사용)
-  console.log('🔁 후기 작성 이동:', {
-    targetUserId,
-    targetNickname,
-    rentalItemId,
-    isSeller,
-  });
-
-  navigation.navigate('ReviewForm', {
-    targetUserId,
-    targetNickname,
-    isSeller,
-    rentalItemId,
-  });
-};
   return (
     <View style={styles.container}>
-      {/* 상태 배너 */}
-      {paymentStatus !== null && (
-        <TouchableOpacity
-          disabled
-          style={{
-            backgroundColor:
-              paymentStatus === 'refunded'
-                ? '#9ACD32'
-                : isPaymentComplete
-                ? '#4CAF50'
-                : '#FFC107',
-            padding: 10,
-            margin: 10,
-            borderRadius: 8,
-          }}
-        >
-          <Text style={{ color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
-            {paymentStatus === 'refunded'
-              ? '✅ 보증금이 환급되었습니다!'
-              : isPaymentComplete
-              ? '✅ 보증금 결제 완료!'
-              : '⚠️ 보증금 결제가 필요합니다!'}
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {/* 후기 작성 버튼 */}
       {paymentStatus === 'refunded' && !reviewSubmitted && (
         <TouchableOpacity
           style={{ backgroundColor: '#6a5acd', padding: 12, margin: 10, borderRadius: 6 }}
@@ -255,6 +231,32 @@ const ChatRoom = ({ route }) => {
           </Text>
         </TouchableOpacity>
       )}
+
+      {paymentStatus !== null && (
+  <TouchableOpacity
+    disabled
+    style={{
+      backgroundColor:
+        paymentStatus === 'refunded'
+          ? '#9ACD32'
+          : isPaymentComplete
+          ? '#4CAF50'
+          : '#FFC107',
+      padding: 10,
+      margin: 10,
+      borderRadius: 8,
+    }}
+  >
+    <Text style={{ color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+      {paymentStatus === 'refunded'
+        ? '✅ 보증금이 환급되었습니다!'
+        : isPaymentComplete
+        ? '✅ 보증금 결제 완료!'
+        : '⚠️ 보증금 결제가 필요합니다!'}
+    </Text>
+  </TouchableOpacity>
+)}
+
 
       <FlatList
         data={messages}

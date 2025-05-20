@@ -10,6 +10,7 @@ exports.addReview = async (req, res) => {
     summary,
     content,
     tags,
+    rentalItemId, // ✅ 반드시 포함되어야 함!
   } = req.body;
 
   if (!reviewerId || !targetUserId || !role || !rating || !content) {
@@ -25,6 +26,7 @@ exports.addReview = async (req, res) => {
       summary: summary || '',
       content,
       tags: tags || [],
+      rentalItemId, // ✅ 반드시 포함되어야 함!
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
      
