@@ -6,6 +6,7 @@ require('dotenv').config();
 const paymentRoutes = require('./routes/paymentRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const itemRoutes = require('./routes/itemRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/items', itemRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/deposit', paymentRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // 🔎 테스트용 기본 라우트
 app.get('/api/hello', (req, res) => {

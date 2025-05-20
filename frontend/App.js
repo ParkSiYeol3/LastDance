@@ -27,6 +27,8 @@ import SplashScreen from './components/SplashScreen';
 import ItemDetail from './components/ItemDetail';
 import Home from './components/Home'; // ⭐ 새로 분리한 Home 컴포넌트
 import StripeCheckoutScreen from './components/StripeCheckoutScreen'; 
+import ReviewForm from './components/ReviewForm';
+
 
 const Stack = createStackNavigator();
 
@@ -45,10 +47,11 @@ export default function App() {
 				<Stack.Screen name='FindAccount' component={FindAccount} />
 				<Stack.Screen name='ChatList' component={ChatList} />
 				<Stack.Screen name='ChatRoom' component={ChatRoom} />
+				<Stack.Screen name='ReviewForm' component={ReviewForm} />
+				<Stack.Screen name="StripeCheckoutScreen" component={StripeCheckoutScreen} />
 				<Stack.Screen name='Write' component={Write} />
 				<Stack.Screen name='MyPage' component={MyPage} />
 				<Stack.Screen name='Footer' component={Footer} />
-				<Stack.Screen name="StripeCheckoutScreen" component={StripeCheckoutScreen} />
 				<Stack.Screen name='Settings' component={Settings} />
 				<Stack.Screen name='Deposit' component={Deposit} />
 				<Stack.Screen name='Notice' component={Notice} />
@@ -57,6 +60,7 @@ export default function App() {
 				<Stack.Screen name='Rank' component={Rank} />
 				<Stack.Screen name='Map' component={MapScreen} />
 				<Stack.Screen name='ItemDetail' component={ItemDetail} />
+				
 			</Stack.Navigator>
 		</NavigationContainer>
 		</StripeProvider>

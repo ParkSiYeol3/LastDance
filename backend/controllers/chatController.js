@@ -169,55 +169,73 @@ exports.markMessageAsRead = async (req, res) => {
  * 상대방 프로필 포함 채팅방 목록 조회
  */
 exports.getChatRoomsWithProfile = async (req, res) => {
-	const currentUserId = req.user.uid;
-  
-	try {
-	  const snapshot = await db.collection('chatRooms')
-		.where('participants', 'array-contains', currentUserId)
-		.get();
-  
-	  const rooms = await Promise.all(
-		snapshot.docs.map(async (doc) => {
-		  const roomData = doc.data();
-		  const roomId = doc.id;
-		  const opponentId = roomData.participants.find((uid) => uid !== currentUserId);
-  
-		  let opponentProfile = {
-			uid: opponentId,
-			nickname: '알 수 없음',
-			profileImage: null,
-		  };
-  
-		  if (opponentId) {
-			const userDoc = await db.collection('users').doc(opponentId).get();
-			if (userDoc.exists) {
-			  const u = userDoc.data();
-			  opponentProfile = {
-				uid: opponentId,
-				nickname: u.nickname || '이름없음',
-				profileImage: u.profileImage || null,
-			  };
-			}
-		  }
-  
-		  return {
-			id: roomId,
-			sellerId: roomData.sellerId || null,           // ✅ 추가된 부분
-			buyerId: roomData.buyerId || null, // ✅ 요 줄 추가!
-			rentalItemId: roomData.rentalItemId || null,
-			lastMessage: roomData.lastMessage || '',
-			createdAt: roomData.createdAt || null,
-			opponent: opponentProfile,
-		  };
-		})
-	  );
-  
-	  res.json({ rooms });
-	} catch (err) {
-	  console.error('❌ 상대방 프로필 포함 조회 실패:', err);
-	  res.status(500).json({ error: '채팅방 목록 조회 실패' });
-	}
-  };
+  const currentUserId = req.user.uid;
+
+  try {
+    const snapshot = await db
+      .collection('chatRooms')
+      .where('participants', 'array-contains', currentUserId)
+      .get();
+
+    const rooms = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const roomData = doc.data();
+        const roomId = doc.id;
+        const opponentId = roomData.participants.find((uid) => uid !== currentUserId);
+
+        // 상대방 프로필
+        let opponentProfile = {
+          uid: opponentId,
+          nickname: '알 수 없음',
+          profileImage: null,
+        };
+        if (opponentId) {
+          const userDoc = await db.collection('users').doc(opponentId).get();
+          if (userDoc.exists) {
+            const u = userDoc.data();
+            opponentProfile = {
+              uid: opponentId,
+              nickname: u.nickname || '이름없음',
+              profileImage: u.profileImage || null,
+            };
+          }
+        }
+
+        // 내 프로필
+        let meProfile = {
+          uid: currentUserId,
+          nickname: '알 수 없음',
+          profileImage: null,
+        };
+        const meDoc = await db.collection('users').doc(currentUserId).get();
+        if (meDoc.exists) {
+          const meData = meDoc.data();
+          meProfile = {
+            uid: currentUserId,
+            nickname: meData.nickname || '이름없음',
+            profileImage: meData.profileImage || null,
+          };
+        }
+
+        return {
+          id: roomId,
+          sellerId: roomData.sellerId || null,
+          buyerId: roomData.buyerId || null,
+          rentalItemId: roomData.rentalItemId || null,
+          lastMessage: roomData.lastMessage || '',
+          createdAt: roomData.createdAt || null,
+          opponent: opponentProfile,
+          me: meProfile, // ✅ 이 줄이 프론트에서 필요
+        };
+      })
+    );
+
+    res.json({ rooms });
+  } catch (err) {
+    console.error('❌ 상대방 프로필 포함 조회 실패:', err);
+    res.status(500).json({ error: '채팅방 목록 조회 실패' });
+  }
+};
 
 /**
  * participants 필드 추가/갱신용

@@ -1,6 +1,5 @@
-// ✅ ChatRoom.js (전체 수정본)
-
-import React, { useEffect, useState, useCallback } from 'react';
+// ChatRoom.js
+import React, { useEffect, useState } from 'react';
 import {
   View,
   TextInput,
@@ -34,6 +33,7 @@ const ChatRoom = ({ route }) => {
   const [depositAmount, setDepositAmount] = useState('');
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [buyerId, setBuyerId] = useState(null);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   const isPaymentComplete = ['created', 'succeeded', 'paid'].includes(paymentStatus);
 
@@ -46,53 +46,63 @@ const ChatRoom = ({ route }) => {
       .catch(console.error);
   }, []);
 
-useEffect(() => {
-  if (!userId || !roomId) return;
-  (async () => {
-    try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const res = await axios.get(`${API_URL}/api/chat/rooms/with-profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const room = res.data.rooms.find(r => r.id === roomId);
-      if (!room) return;
+  useEffect(() => {
+    if (!userId || !roomId) return;
+    (async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const res = await axios.get(`${API_URL}/api/chat/rooms/with-profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      setIsSeller(room.sellerId === userId);
-      setRentalItemId(room.rentalItemId);
+        const room = res.data.rooms.find(r => r.id === roomId);
+        if (!room) return;
 
-      // ✅ 이 줄이 없으면 buyerId가 undefined로 유지됨
-      if (room.buyerId) {
+        setIsSeller(room.sellerId === userId);
+        setRentalItemId(room.rentalItemId);
         setBuyerId(room.buyerId);
-      } else {
-        console.warn('❗ buyerId 필드가 없음! fallback 처리해야 함');
-      }
 
-      // 나머지 파싱
-      const map = {};
-      map[userId] = { profileImage: null };
-      map[room.opponent.uid] = {
-        profileImage: room.opponent.profileImage?.replace(/^\"(.*)\"$/, '$1'),
-      };
-      setParticipants(map);
-    } catch (err) {
-      console.error('방 프로필 조회 실패:', err);
-    }
-  })();
-}, [userId, roomId]);
+        const map = {};
+        if (room.me?.uid) {
+          map[room.me.uid] = {
+            profileImage:
+              typeof room.me.profileImage === 'string'
+                ? room.me.profileImage.replace(/^\"|\"$/g, '')
+                : null,
+            nickname: room.me.nickname || '나',
+            uid: room.me.uid,
+          };
+        }
+
+        if (room.opponent?.uid) {
+          map[room.opponent.uid] = {
+            profileImage:
+              typeof room.opponent.profileImage === 'string'
+                ? room.opponent.profileImage.replace(/^\"|\"$/g, '')
+                : null,
+            nickname: room.opponent.nickname || '상대방',
+            uid: room.opponent.uid,
+          };
+        }
+
+        setParticipants(map);
+      } catch (err) {
+        console.error('방 프로필 조회 실패:', err.response?.data || err.message);
+      }
+    })();
+  }, [userId, roomId]);
 
   useEffect(() => {
-  const ready =
-    typeof isSeller === 'boolean' &&
-    rentalItemId &&
-    ((isSeller && buyerId) || (!isSeller && userId));
+    const ready =
+      typeof isSeller === 'boolean' &&
+      rentalItemId &&
+      ((isSeller && buyerId) || (!isSeller && userId));
 
-  if (ready) {
-    console.log('🚀 결제 상태 조회 조건 충족됨 → 실행!');
-    reloadPaymentStatus();
-  } else {
-    console.log('⏳ 아직 조건 불충분:', { isSeller, userId, buyerId, rentalItemId });
-  }
-}, [isSeller, userId, buyerId, rentalItemId]);
+    if (ready) {
+      reloadPaymentStatus();
+      checkReviewSubmitted();
+    }
+  }, [isSeller, userId, buyerId, rentalItemId]);
 
   const reloadPaymentStatus = async () => {
     try {
@@ -102,6 +112,17 @@ useEffect(() => {
       setPaymentStatus(res.data.status);
     } catch (err) {
       console.error('결제 상태 재조회 실패:', err);
+    }
+  };
+
+  const checkReviewSubmitted = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/reviews/check`, {
+        params: { reviewerId: userId, rentalItemId },
+      });
+      setReviewSubmitted(res.data.exists);
+    } catch (err) {
+      console.error('리뷰 확인 실패:', err);
     }
   };
 
@@ -138,21 +159,23 @@ useEffect(() => {
 
   const renderItem = ({ item }) => {
     const isMe = item.senderId === userId;
-    const profile = participants[item.senderId] || {};
+    const profile = participants[item.senderId] || {
+      nickname: '알 수 없음',
+      profileImage: null,
+    };
 
     return (
       <View style={[styles.row, isMe ? styles.rowRight : styles.rowLeft]}>
         {!isMe && (
           <Image
             source={
-              profile.profileImage
+              typeof profile.profileImage === 'string' && profile.profileImage.startsWith('http')
                 ? { uri: profile.profileImage }
                 : require('../assets/profile.png')
             }
             style={styles.avatar}
           />
         )}
-
         <TouchableOpacity
           onPress={() => onRead(item.id)}
           style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}
@@ -169,115 +192,59 @@ useEffect(() => {
     );
   };
 
+  const handleNavigateToReview = () => {
+    const targetUserId = isSeller ? buyerId : participants[buyerId]?.uid || buyerId;
+    const targetNickname = isSeller
+      ? participants[buyerId]?.nickname || '대여자'
+      : participants[userId]?.nickname || '판매자';
+
+    navigation.navigate('ReviewForm', {
+      targetUserId,
+      targetNickname,
+      isSeller,
+      rentalItemId,
+    });
+  };
+
   return (
     <View style={styles.container}>
       {/* 상태 배너 */}
-{paymentStatus !== null && (
-  <TouchableOpacity
-    disabled
-    style={{
-      backgroundColor:
-        paymentStatus === 'refunded'
-          ? '#9ACD32'
-          : isPaymentComplete
-          ? '#4CAF50'
-          : '#FFC107',
-      padding: 10,
-      margin: 10,
-      borderRadius: 8,
-    }}
-  >
-    <Text style={{
-      color: '#fff',
-      fontWeight: 'bold',
-      textAlign: 'center',
-    }}>
-      {paymentStatus === 'refunded'
-        ? '✅ 보증금이 환급되었습니다!'
-        : isPaymentComplete
-        ? '✅ 보증금 결제 완료!'
-        : '⚠️ 보증금 결제가 필요합니다!'}
-    </Text>
-  </TouchableOpacity>
-)}
-
-{isSeller && isPaymentComplete && paymentStatus !== 'refunded' && (
-  <TouchableOpacity
-    onPress={async () => {
-      try {
-        const res = await axios.post(`${API_URL}/api/deposit/auto-refund`, {
-          userId: buyerId,
-          rentalItemId,
-        });
-
-        if (res.data.message) {
-          Alert.alert('✅ 환불 완료', '보증금이 환급되었습니다.');
-          setPaymentStatus('refunded');
-        }
-      } catch (err) {
-        console.error('❌ 환불 실패:', err.response?.data || err.message);
-        Alert.alert('오류', '환불 처리 중 문제가 발생했습니다.');
-      }
-    }}
-    style={{ backgroundColor: '#228B22', padding: 10, margin: 10, borderRadius: 6 }}
-  >
-    <Text style={{ color: '#fff', textAlign: 'center' }}>거래 종료 (보증금 환급)</Text>
-  </TouchableOpacity>
-)}
-
-      {/* 판매자: 결제 요청 UI */}
-      {isSeller && paymentStatus === 'none' && (
-        <>
-          <TextInput
-            style={{ borderWidth: 1, borderColor: '#ccc', margin: 10, padding: 8, borderRadius: 6 }}
-            keyboardType="numeric"
-            value={depositAmount}
-            onChangeText={setDepositAmount}
-            placeholder="보증금 금액 입력 (원)"
-          />
-          <TouchableOpacity
-            onPress={async () => {
-              if (!depositAmount) return Alert.alert('입력 오류', '보증금 금액을 입력해주세요.');
-              await sendMessage(roomId, userId, `보증금 결제 요청: ${depositAmount}원`, 'depositRequest', parseInt(depositAmount));
-              Alert.alert('알림', '보증금 결제 요청을 전송했습니다.');
-              setDepositAmount('');
-            }}
-            style={{ backgroundColor: '#FF7F50', padding: 10, margin: 10, borderRadius: 6 }}
-          >
-            <Text style={{ color: '#fff', textAlign: 'center' }}>보증금 결제 요청</Text>
-          </TouchableOpacity>
-        </>
+      {paymentStatus !== null && (
+        <TouchableOpacity
+          disabled
+          style={{
+            backgroundColor:
+              paymentStatus === 'refunded'
+                ? '#9ACD32'
+                : isPaymentComplete
+                ? '#4CAF50'
+                : '#FFC107',
+            padding: 10,
+            margin: 10,
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            {paymentStatus === 'refunded'
+              ? '✅ 보증금이 환급되었습니다!'
+              : isPaymentComplete
+              ? '✅ 보증금 결제 완료!'
+              : '⚠️ 보증금 결제가 필요합니다!'}
+          </Text>
+        </TouchableOpacity>
       )}
 
-      {/* 구매자: 결제 버튼 */}
-      {!isSeller && !isPaymentComplete &&  paymentStatus !== 'refunded' && (() => {
-        const depositMsg = messages.find(m => m.type === 'depositRequest' && m.amount);
-        if (!depositMsg) return null;
-
-        return (
-          <TouchableOpacity
-            onPress={async () => {
-              try {
-                const res = await axios.post(`${API_URL}/api/deposit/create-intent`, {
-                  userId,
-                  rentalItemId,
-                  amount: parseInt(depositMsg.amount),
-                });
-                const { clientSecret } = res.data;
-                navigation.navigate('StripeCheckoutScreen', { clientSecret });
-              } catch (err) {
-                console.error('결제 요청 실패:', err.response?.data || err.message);
-                Alert.alert('오류', '보증금 결제를 시작할 수 없습니다.');
-              }
-            }}
-            style={{ backgroundColor: '#1E90FF', padding: 10, margin: 10, borderRadius: 6 }}
-          >
-            <Text style={{ color: '#fff', textAlign: 'center' }}>
-              보증금 {depositMsg.amount}원 결제하기
-            </Text>
-          </TouchableOpacity>
-        );
-      })()}
+      {/* 후기 작성 버튼 */}
+      {paymentStatus === 'refunded' && !reviewSubmitted && (
+        <TouchableOpacity
+          style={{ backgroundColor: '#6a5acd', padding: 12, margin: 10, borderRadius: 6 }}
+          onPress={handleNavigateToReview}
+        >
+          <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>
+            📝 거래 후기 작성하기
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <FlatList
         data={messages}
@@ -286,12 +253,6 @@ useEffect(() => {
         renderItem={renderItem}
         contentContainerStyle={{ padding: 10 }}
       />
-      
-      {isSeller && (
-  <Text style={{ color: 'black', textAlign: 'center', marginVertical: 10 }}>
-    판매자 화면 - 결제 상태: {paymentStatus}
-  </Text>
-)}
 
       <View style={styles.inputContainer}>
         <TextInput
