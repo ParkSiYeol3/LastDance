@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-const API_URL = 'http://192.168.0.6:3000';
+const API_URL = 'http://172.30.1.91:3000';
 
 export default function ReviewList({ route }) {
   const { userId, type } = route.params;
@@ -61,7 +61,7 @@ export default function ReviewList({ route }) {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
+    <View style={styles.reviewCard}>
       <View style={styles.profileRow}>
         {item.reviewerProfile?.profileImage ? (
           <Image
@@ -132,6 +132,7 @@ export default function ReviewList({ route }) {
 
       <FlatList
         data={getSortedReviews()}
+        scrollEnabled={false} 
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={{ paddingBottom: 50 }}
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '500',
   },
-  card: {
+  reviewCard: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 10,

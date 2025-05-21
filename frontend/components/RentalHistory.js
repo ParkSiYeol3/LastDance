@@ -1,6 +1,6 @@
 // components/RentalHistory.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert} from 'react-native';
 import axios from 'axios';
 import { API_URL } from '../firebase-config';
 import { formatTimestamp } from '../utils/formatTimestamp';
@@ -27,6 +27,7 @@ const RentalHistory = ({ itemId }) => {
 			<Text style={styles.title}>📜 대여 기록</Text>
 			<FlatList
 				data={history}
+				scrollEnabled={false}
 				keyExtractor={(item) => item.id}
 				renderItem={({ item }) => (
 					<View style={styles.entry}>
@@ -44,26 +45,34 @@ const RentalHistory = ({ itemId }) => {
 export default RentalHistory;
 
 const styles = StyleSheet.create({
-	container: {
-		width: '100%',
-		paddingHorizontal: 20,
-		marginTop: 30,
-	},
-	title: {
-		fontSize: 18,
-		fontWeight: 'bold',
-		marginBottom: 10,
-	},
-	entry: {
-		paddingVertical: 6,
-		borderBottomWidth: 1,
-		borderColor: '#eee',
-	},
-	text: {
-		fontSize: 14,
-	},
-	dateText: {
-		fontSize: 12,
-		color: '#888',
-	},
+  container: {
+    width: '100%',
+    paddingHorizontal: 20,
+    marginTop: 30,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  entry: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  text: {
+    fontSize: 14,
+    color: '#333',
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+    textAlign: 'right',
+  },
 });
