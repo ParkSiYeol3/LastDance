@@ -145,3 +145,80 @@ exports.getRentalHistory = async (req, res) => {
 		res.status(500).json({ error: '서버 오류' });
 	}
 };
+
+// 좋아요 추가
+exports.likeItem = async (req, res) => {
+  const { itemId } = req.params;
+  const { userId } = req.body;
+  try {
+    await db.collection('likes').doc(`${itemId}_${userId}`).set({
+      itemId,
+      userId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('좋아요 추가 실패:', err);
+    res.status(500).json({ error: '좋아요 추가 실패' });
+  }
+};
+
+// 좋아요 삭제
+exports.unlikeItem = async (req, res) => {
+  const { itemId } = req.params;
+  const { userId } = req.body;
+  try {
+    await db.collection('likes').doc(`${itemId}_${userId}`).delete();
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('좋아요 삭제 실패:', err);
+    res.status(500).json({ error: '좋아요 삭제 실패' });
+  }
+};
+
+// 찜 추가
+exports.bookmarkItem = async (req, res) => {
+  const { itemId } = req.params;
+  const { userId } = req.body;
+  try {
+    await db.collection('bookmarks').doc(`${itemId}_${userId}`).set({
+      itemId,
+      userId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('찜 추가 실패:', err);
+    res.status(500).json({ error: '찜 추가 실패' });
+  }
+};
+
+// 찜 삭제
+exports.unbookmarkItem = async (req, res) => {
+  const { itemId } = req.params;
+  const { userId } = req.body;
+  try {
+    await db.collection('bookmarks').doc(`${itemId}_${userId}`).delete();
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('찜 삭제 실패:', err);
+    res.status(500).json({ error: '찜 삭제 실패' });
+  }
+};
+
+// 좋아요 & 찜 상태 조회
+exports.getItemStatus = async (req, res) => {
+  const { itemId } = req.params;
+  const { userId } = req.query;
+  try {
+    const likeDoc = await db.collection('likes').doc(`${itemId}_${userId}`).get();
+    const bookmarkDoc = await db.collection('bookmarks').doc(`${itemId}_${userId}`).get();
+    res.status(200).json({
+      liked: likeDoc.exists,
+      bookmarked: bookmarkDoc.exists,
+    });
+  } catch (err) {
+    console.error('상태 조회 실패:', err);
+    res.status(500).json({ error: '상태 조회 실패' });
+  }
+};
