@@ -4,55 +4,55 @@ const { v4: uuidv4 } = require('uuid');
 const { doc, getDoc, addDoc, collection, serverTimestamp, query, where, onSnapshot, deleteDoc, updateDoc, orderBy, getDocs } = require('firebase-admin/firestore');
 
 /**
- * 채팅방 생성 
+ * 채팅방 생성
  */
 // controllers/chatController.js
 exports.startChat = async (req, res) => {
-  const { userId1, userId2, rentalItemId } = req.body;
+	const { userId1, userId2, rentalItemId } = req.body;
 
-  if (!userId1 || !userId2 || !rentalItemId) {
-    return res.status(400).json({ error: 'userId1, userId2, rentalItemId 모두 필요합니다.' });
-  }
+	if (!userId1 || !userId2 || !rentalItemId) {
+		return res.status(400).json({ error: 'userId1, userId2, rentalItemId 모두 필요합니다.' });
+	}
 
-  try {
-    const snapshot = await db
-      .collection('chatRooms')
-      .where('participants', 'in', [
-        [userId1, userId2],
-        [userId2, userId1],
-      ])
-      .where('rentalItemId', '==', rentalItemId)
-      .limit(1)
-      .get();
+	try {
+		const snapshot = await db
+			.collection('chatRooms')
+			.where('participants', 'in', [
+				[userId1, userId2],
+				[userId2, userId1],
+			])
+			.where('rentalItemId', '==', rentalItemId)
+			.limit(1)
+			.get();
 
-    if (!snapshot.empty) {
-      const chatRoom = snapshot.docs[0];
+		if (!snapshot.empty) {
+			const chatRoom = snapshot.docs[0];
 
-      // ✅ buyerId 없으면 보완 저장
-      if (!chatRoom.data().buyerId) {
-        await chatRoom.ref.update({
-          buyerId: userId1, // 항상 userId1을 구매자로 저장
-        });
-      }
+			// ✅ buyerId 없으면 보완 저장
+			if (!chatRoom.data().buyerId) {
+				await chatRoom.ref.update({
+					buyerId: userId1, // 항상 userId1을 구매자로 저장
+				});
+			}
 
-      return res.json({ chatRoomId: chatRoom.id, message: '기존 채팅방 있음' });
-    }
+			return res.json({ chatRoomId: chatRoom.id, message: '기존 채팅방 있음' });
+		}
 
-    // ✅ 새 채팅방 생성 (buyerId 포함)
-    const newRef = await db.collection('chatRooms').add({
-      rentalItemId,
-      participants: [userId1, userId2],
-      sellerId: userId2,
-      buyerId: userId1,
-      lastMessage: '',
-      createdAt: new Date(),
-    });
+		// ✅ 새 채팅방 생성 (buyerId 포함)
+		const newRef = await db.collection('chatRooms').add({
+			rentalItemId,
+			participants: [userId1, userId2],
+			sellerId: userId2,
+			buyerId: userId1,
+			lastMessage: '',
+			createdAt: new Date(),
+		});
 
-    res.json({ chatRoomId: newRef.id, message: '새 채팅방 생성됨' });
-  } catch (err) {
-    console.error('❌ 채팅방 생성 오류:', err);
-    res.status(500).json({ error: err.message });
-  }
+		res.json({ chatRoomId: newRef.id, message: '새 채팅방 생성됨' });
+	} catch (err) {
+		console.error('❌ 채팅방 생성 오류:', err);
+		res.status(500).json({ error: err.message });
+	}
 };
 /**
  * 나의 채팅방 목록 조회
@@ -94,7 +94,8 @@ exports.sendMessage = async (req, res) => {
 			senderId,
 			text,
 			type,
-			sentAt: new Date(),
+			sentAt: admin.firestore.FieldValue.serverTimestamp(), // ✅ 수정됨
+			createdAt: admin.firestore.FieldValue.serverTimestamp(), // ✅ 쿼리 정렬용
 			isRead: false,
 		};
 
@@ -132,8 +133,8 @@ exports.getMessages = async (req, res) => {
 				id: doc.id,
 				senderId: d.senderId,
 				text: d.text,
-				type: d.type || 'text',           // ✅ 추가
-                amount: d.amount || null,         // ✅ 추가
+				type: d.type || 'text', // ✅ 추가
+				amount: d.amount || null, // ✅ 추가
 				sentAt: d.sentAt.toDate().toISOString(),
 				isRead: d.isRead || false,
 			};
@@ -169,72 +170,69 @@ exports.markMessageAsRead = async (req, res) => {
  * 상대방 프로필 포함 채팅방 목록 조회
  */
 exports.getChatRoomsWithProfile = async (req, res) => {
-  const currentUserId = req.user.uid;
+	const currentUserId = req.user.uid;
 
-  try {
-    const snapshot = await db
-      .collection('chatRooms')
-      .where('participants', 'array-contains', currentUserId)
-      .get();
+	try {
+		const snapshot = await db.collection('chatRooms').where('participants', 'array-contains', currentUserId).get();
 
-    const rooms = await Promise.all(
-      snapshot.docs.map(async (doc) => {
-        const roomData = doc.data();
-        const roomId = doc.id;
-        const opponentId = roomData.participants.find((uid) => uid !== currentUserId);
+		const rooms = await Promise.all(
+			snapshot.docs.map(async (doc) => {
+				const roomData = doc.data();
+				const roomId = doc.id;
+				const opponentId = roomData.participants.find((uid) => uid !== currentUserId);
 
-        // 상대방 프로필
-        let opponentProfile = {
-          uid: opponentId,
-          nickname: '알 수 없음',
-          profileImage: null,
-        };
-        if (opponentId) {
-          const userDoc = await db.collection('users').doc(opponentId).get();
-          if (userDoc.exists) {
-            const u = userDoc.data();
-            opponentProfile = {
-              uid: opponentId,
-              nickname: u.nickname || '이름없음',
-              profileImage: u.profileImage || null,
-            };
-          }
-        }
+				// 상대방 프로필
+				let opponentProfile = {
+					uid: opponentId,
+					nickname: '알 수 없음',
+					profileImage: null,
+				};
+				if (opponentId) {
+					const userDoc = await db.collection('users').doc(opponentId).get();
+					if (userDoc.exists) {
+						const u = userDoc.data();
+						opponentProfile = {
+							uid: opponentId,
+							nickname: u.nickname || '이름없음',
+							profileImage: u.profileImage || null,
+						};
+					}
+				}
 
-        // 내 프로필
-        let meProfile = {
-          uid: currentUserId,
-          nickname: '알 수 없음',
-          profileImage: null,
-        };
-        const meDoc = await db.collection('users').doc(currentUserId).get();
-        if (meDoc.exists) {
-          const meData = meDoc.data();
-          meProfile = {
-            uid: currentUserId,
-            nickname: meData.nickname || '이름없음',
-            profileImage: meData.profileImage || null,
-          };
-        }
+				// 내 프로필
+				let meProfile = {
+					uid: currentUserId,
+					nickname: '알 수 없음',
+					profileImage: null,
+				};
+				const meDoc = await db.collection('users').doc(currentUserId).get();
+				if (meDoc.exists) {
+					const meData = meDoc.data();
+					meProfile = {
+						uid: currentUserId,
+						nickname: meData.nickname || '이름없음',
+						profileImage: meData.profileImage || null,
+					};
+				}
 
-        return {
-          id: roomId,
-          sellerId: roomData.sellerId || null,
-          buyerId: roomData.buyerId || null,
-          rentalItemId: roomData.rentalItemId || null,
-          lastMessage: roomData.lastMessage || '',
-          createdAt: roomData.createdAt || null,
-          opponent: opponentProfile,
-          me: meProfile, // ✅ 이 줄이 프론트에서 필요
-        };
-      })
-    );
+				return {
+					id: roomId,
+					sellerId: roomData.sellerId || null,
+					buyerId: roomData.buyerId || null,
+					rentalItemId: roomData.rentalItemId || null,
+					lastMessage: roomData.lastMessage || '',
+					createdAt: roomData.createdAt || null,
+					opponent: opponentProfile,
+					me: meProfile, // ✅ 이 줄이 프론트에서 필요
+				};
+			})
+		);
 
-    res.json({ rooms });
-  } catch (err) {
-    console.error('❌ 상대방 프로필 포함 조회 실패:', err);
-    res.status(500).json({ error: '채팅방 목록 조회 실패' });
-  }
+		res.json({ rooms });
+	} catch (err) {
+		console.error('❌ 상대방 프로필 포함 조회 실패:', err);
+		res.status(500).json({ error: '채팅방 목록 조회 실패' });
+	}
 };
 
 /**
