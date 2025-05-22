@@ -11,5 +11,10 @@ router.post('/:itemId/rentals/:rentalId/confirm', itemController.confirmRental);
 router.get('/:itemId/comments', itemController.getComments);
 router.post('/:itemId/comments', itemController.addComment);
 router.get('/:itemId/rentals', itemController.getRentalHistory);
+router.post('/:itemId/like', itemController.likeItem);
+router.delete('/:itemId/like', itemController.unlikeItem);
+router.post('/:itemId/bookmark', itemController.bookmarkItem);
+router.delete('/:itemId/bookmark', itemController.unbookmarkItem);
+router.get('/:itemId/status', itemController.getItemStatus);
 
 module.exports = router;
