@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "1072490774071",
+    "firebase_url": "https://last-dance-96dd5-default-rtdb.firebaseio.com",
+    "project_id": "last-dance-96dd5",
+    "storage_bucket": "last-dance-96dd5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1072490774071:android:6d0d19f8ab2e42066489b2",
+        "android_client_info": {
+          "package_name": "com.lastdance.rentalclothes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCK7sSNye5NrUjRzGnJTOm4H_tVqYnPaE4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1072490774071:android:424189218e18464d6489b2",
+        "android_client_info": {
+          "package_name": "com.sunmoon.lastdance"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCK7sSNye5NrUjRzGnJTOm4H_tVqYnPaE4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
