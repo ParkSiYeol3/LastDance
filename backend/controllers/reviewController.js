@@ -56,21 +56,43 @@ exports.getReceivedReviews = async (req, res) => {
   try {
     const snapshot = await db.collection('reviews')
       .where('targetUserId', '==', userId)
-      .orderBy('createdAt', 'desc')
+      // .orderBy('createdAt', 'desc') ← 주석 처리하여 오류 방지
       .get();
 
     const reviews = await Promise.all(
       snapshot.docs.map(async (doc) => {
         const review = doc.data();
-        const userDoc = await db.collection('users').doc(review.reviewerId).get();
-        const userData = userDoc.exists ? userDoc.data() : {};
+
+        // 👤 작성자 정보 가져오기
+        let reviewerProfile = {
+          nickname: '알 수 없음',
+          profileImage: null,
+        };
+        if (review.reviewerId) {
+          const userDoc = await db.collection('users').doc(review.reviewerId).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            reviewerProfile = {
+              nickname: userData.nickname || '알 수 없음',
+              profileImage: userData.profileImage || null,
+            };
+          }
+        }
+
+        // 🧥 아이템 이름 가져오기
+        let rentalItemName = '';
+        if (review.rentalItemId) {
+          const itemDoc = await db.collection('items').doc(review.rentalItemId).get();
+          if (itemDoc.exists) {
+            rentalItemName = itemDoc.data().name || '';
+          }
+        }
+
         return {
           id: doc.id,
           ...review,
-          reviewerProfile: {
-            nickname: userData.nickname || '알 수 없음',
-            profileImage: userData.profileImage || null,
-          },
+          reviewerProfile,
+          rentalItemName,
         };
       })
     );
@@ -82,6 +104,7 @@ exports.getReceivedReviews = async (req, res) => {
   }
 };
 
+
 // 내가 작성한 리뷰 조회 
 exports.getWrittenReviews = async (req, res) => {
   const { userId } = req.params;
@@ -92,7 +115,25 @@ exports.getWrittenReviews = async (req, res) => {
       .orderBy('createdAt', 'desc')
       .get();
 
-    const reviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const reviews = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const review = doc.data();
+
+        // 🧥 대여 아이템 이름 가져오기
+        let rentalItemName = '';
+        if (review.rentalItemId) {
+          const itemDoc = await db.collection('items').doc(review.rentalItemId).get();
+          rentalItemName = itemDoc.exists ? itemDoc.data().name || '' : '';
+        }
+
+        return {
+          id: doc.id,
+          ...review,
+          rentalItemName, // ✅ 추가된 필드
+        };
+      })
+    );
+
     res.json({ reviews });
   } catch (err) {
     console.error('작성한 리뷰 조회 실패:', err);

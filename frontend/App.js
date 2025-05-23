@@ -28,6 +28,7 @@ import ItemDetail from './components/ItemDetail';
 import Home from './components/Home'; // ⭐ 새로 분리한 Home 컴포넌트
 import StripeCheckoutScreen from './components/StripeCheckoutScreen';
 import ReviewForm from './components/ReviewForm';
+import ReviewList from './components/ReviewList'; // ← 이 줄 추가
 import RentalRequests from './components/RentalRequests';
 
 const Stack = createStackNavigator();
@@ -60,6 +61,7 @@ export default function App() {
 					<Stack.Screen name='Rank' component={Rank} />
 					<Stack.Screen name='Map' component={MapScreen} />
 					<Stack.Screen name='ItemDetail' component={ItemDetail} />
+					<Stack.Screen name="ReviewList" component={ReviewList} options={{ title: '거래 후기' }} /> 
 					<Stack.Screen name='RentalRequests' component={RentalRequests} />
 				</Stack.Navigator>
 			</NavigationContainer>

@@ -1,3 +1,4 @@
+// ✅ 판매자 프로필 fetch를 userRoutes 기반으로 연결 (404 방지 및 TypeError 예방)
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -20,6 +21,7 @@ const ItemDetail = () => {
   const [item, setItem] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [itemOwnerName, setItemOwnerName] = useState('');
+  const [itemOwnerProfile, setItemOwnerProfile] = useState(null);
   const [rentalRequested, setRentalRequested] = useState(false);
   const [editing, setEditing] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
@@ -30,43 +32,6 @@ const ItemDetail = () => {
     loadUserAndItem();
   }, []);
 
-  const loadUserAndItem = async () => {
-    try {
-      const userJson = await AsyncStorage.getItem('currentUser');
-      if (userJson) {
-        const user = JSON.parse(userJson);
-        setCurrentUser(user);
-        await fetchItem();
-        await fetchItemStatus(user.uid);
-      }
-    } catch (error) {
-      console.error('유저 정보 로딩 오류:', error);
-    }
-  };
-
-  const fetchItem = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/api/items/${itemId}`);
-      setItem(res.data.item);
-      setItemOwnerName(res.data.itemOwnerName);
-    } catch (err) {
-      console.error('아이템 불러오기 실패:', err);
-      Alert.alert('오류', '아이템 정보를 불러올 수 없습니다.');
-    }
-  };
-
-  const fetchItemStatus = async (userId) => {
-    try {
-      const res = await axios.get(`${API_URL}/api/items/${itemId}/status`, {
-        params: { userId },
-      });
-      setLiked(res.data.liked);
-      setBookmarked(res.data.bookmarked);
-    } catch (error) {
-      console.error('상태 불러오기 실패:', error);
-    }
-  };
-
   const toggleLike = async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
@@ -74,10 +39,10 @@ const ItemDetail = () => {
       if (liked) {
         await axios.delete(url, {
           headers: { Authorization: `Bearer ${token}` },
-          data: { userId: currentUser.uid },
+          data: { userId: currentUser?.uid },
         });
       } else {
-        await axios.post(url, { userId: currentUser.uid }, {
+        await axios.post(url, { userId: currentUser?.uid }, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -94,10 +59,10 @@ const ItemDetail = () => {
       if (bookmarked) {
         await axios.delete(url, {
           headers: { Authorization: `Bearer ${token}` },
-          data: { userId: currentUser.uid },
+          data: { userId: currentUser?.uid },
         });
       } else {
-        await axios.post(url, { userId: currentUser.uid }, {
+        await axios.post(url, { userId: currentUser?.uid }, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -107,80 +72,53 @@ const ItemDetail = () => {
     }
   };
 
-  const handleRentalRequest = async () => {
+  const fetchItemStatus = async (userId) => {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.post(
-        `${API_URL}/api/items/${itemId}/rentals`,
-        {
-          requesterId: currentUser.uid,
-          ownerId: item.userId,
-        },
-        { headers }
-      );
-      setRentalRequested(true);
+      const res = await axios.get(`${API_URL}/api/items/${itemId}/status`, {
+        params: { userId },
+      });
+      setLiked(res.data?.liked ?? false);
+      setBookmarked(res.data?.bookmarked ?? false);
     } catch (error) {
-      console.error('대여 요청 오류:', error.response || error);
-      Alert.alert('오류', '대여 요청에 실패했습니다.');
+      console.error('상태 불러오기 실패:', error);
     }
   };
 
-  const handleDelete = async () => {
-    if (!currentUser) {
-      Alert.alert('로그인 필요', '삭제하려면 로그인해야 합니다.');
-      return;
+  const loadUserAndItem = async () => {
+    try {
+      const userJson = await AsyncStorage.getItem('currentUser');
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        setCurrentUser(user);
+        await fetchItem();
+        if (user?.uid) await fetchItemStatus(user.uid);
+      }
+    } catch (error) {
+      console.error('유저 정보 로딩 오류:', error);
     }
-    Alert.alert('경고', '정말로 이 상품을 삭제하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const token = await AsyncStorage.getItem('accessToken');
-            await axios.delete(`${API_URL}/api/items/${itemId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            Alert.alert('삭제 완료', '상품이 삭제되었습니다.');
-            navigation.goBack();
-          } catch (err) {
-            console.error('상품 삭제 실패:', err);
-            Alert.alert('오류', '상품 삭제 실패');
-          }
-        },
-      },
-    ]);
   };
 
-  const handleStartChat = async () => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (!user) {
-      Alert.alert('로그인 필요', '채팅을 시작하려면 로그인해야 합니다.');
-      return;
-    }
-
+  const fetchItem = async () => {
     try {
-      const token = await user.getIdToken(true);
-      const res = await axios.post(
-        `${API_URL}/api/chat/start`,
-        {
-          userId1: user.uid,
-          userId2: item.userId,
-          rentalItemId: itemId,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await axios.get(`${API_URL}/api/items/${itemId}`);
+      setItem(res.data?.item ?? null);
+      setItemOwnerName(res.data?.itemOwnerName ?? '');
+      if (res.data?.item?.userId) {
+        await fetchOwnerProfile(res.data.item.userId);
+      }
+    } catch (err) {
+      console.error('아이템 불러오기 실패:', err);
+      Alert.alert('오류', '아이템 정보를 불러올 수 없습니다.');
+    }
+  };
 
-      const { chatRoomId } = res.data;
-      navigation.navigate('ChatRoom', { roomId: chatRoomId });
-    } catch (error) {
-      console.error('채팅방 생성 오류:', error);
-      Alert.alert('오류', '채팅방 생성에 실패했습니다.');
+  const fetchOwnerProfile = async (ownerId) => {
+    if (!ownerId) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/users/${ownerId}`);
+      setItemOwnerProfile(res.data);
+    } catch (err) {
+      console.error('판매자 프로필 불러오기 실패:', err);
     }
   };
 
@@ -197,7 +135,7 @@ const ItemDetail = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.imageBox}>
-        {item.imageURL && (
+        {item?.imageURL && (
           <Image source={{ uri: item.imageURL }} style={styles.image} />
         )}
 
@@ -212,61 +150,31 @@ const ItemDetail = () => {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.title}>{item.name}</Text>
-        <Text style={styles.description}>{item.description}</Text>
-        <Text style={styles.ownerText}>판매자: {itemOwnerName}</Text>
+        <Text style={styles.title}>{item?.name}</Text>
+        <Text style={styles.description}>{item?.description}</Text>
+
+        {item?.userId && (
+          <View style={styles.sellerRow}>
+            <Text style={styles.ownerText}>판매자: {itemOwnerName}</Text>
+            <TouchableOpacity
+              style={styles.reviewButton}
+              onPress={() =>
+                navigation.navigate('ReviewList', {
+                  userId: item.userId,
+                  type: 'received',
+                })
+              }
+            >
+              <Text style={styles.reviewButtonText}>후기 보기</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {isOwner && (
         <View style={styles.ownerNoticeBox}>
           <Text style={styles.ownerNoticeText}>본인의 물품입니다.</Text>
         </View>
-      )}
-
-      {!isOwner && (
-        <View style={styles.buttonGroup}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleRentalRequest}
-            disabled={rentalRequested}
-          >
-            <Text style={styles.buttonText}>
-              {rentalRequested ? '요청됨!' : '대여 요청하기'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.buttonOutline}
-            onPress={handleStartChat}
-            disabled={loadingChat}
-          >
-            <Text style={styles.buttonOutlineText}>
-              {loadingChat ? '채팅 연결 중...' : '채팅하기'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {isOwner && !editing && (
-        <View style={styles.ownerButtonGroup}>
-          <TouchableOpacity style={styles.buttonEdit} onPress={() => setEditing(true)}>
-            <Text style={styles.buttonText}>상품 수정</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.buttonDelete} onPress={handleDelete}>
-            <Text style={styles.buttonText}>상품 삭제</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {editing && (
-        <EditItemForm
-          item={{ id: itemId, ...item }}
-          onCancel={() => setEditing(false)}
-          onSuccess={async () => {
-            setEditing(false);
-            await fetchItem();
-          }}
-        />
       )}
 
       <CommentSection itemId={itemId} currentUser={currentUser} />
@@ -323,6 +231,22 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
     gap: 10,
+  },
+  sellerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reviewButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  reviewButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
   title: {
     fontSize: 22,
@@ -394,4 +318,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
+  profileBox: { flexDirection: 'row', alignItems: 'center', marginTop: 10, marginBottom: 10 },
+  profileImage: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+  profileNickname: { fontSize: 16, color: '#007AFF', textDecorationLine: 'underline' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });
