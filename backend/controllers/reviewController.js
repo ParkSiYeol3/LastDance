@@ -13,7 +13,7 @@ exports.addReview = async (req, res) => {
     rentalItemId, // ✅ 반드시 포함되어야 함!
   } = req.body;
 
-  if (!reviewerId || !targetUserId || !role || !rating || !content) {
+  if (!reviewerId || !targetUserId || !role || !rating || !content || !rentalItemId) {
     return res.status(400).json({ error: '필수 필드가 누락되었습니다.' });
   }
 
@@ -26,23 +26,41 @@ exports.addReview = async (req, res) => {
       summary: summary || '',
       content,
       tags: tags || [],
-      rentalItemId, // ✅ 반드시 포함되어야 함!
+      rentalItemId,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
-     
+
     // ✅ role 기반으로 buyerId / sellerId 필드 설정
     if (role === 'buyer') {
-    reviewData.buyerId = targetUserId;
-    reviewData.sellerId = reviewerId;
+      reviewData.buyerId = targetUserId;
+      reviewData.sellerId = reviewerId;
     } else if (role === 'seller') {
-    reviewData.buyerId = reviewerId;
-    reviewData.sellerId = targetUserId;
+      reviewData.buyerId = reviewerId;
+      reviewData.sellerId = targetUserId;
     }
 
-
+    // ✅ 리뷰 저장
     const docRef = await db.collection('reviews').add(reviewData);
 
-    res.status(201).json({ message: '리뷰가 저장되었습니다.', reviewId: docRef.id });
+    // ✅ 리뷰 저장 후 평점 업데이트
+    const itemRef = db.collection('items').doc(rentalItemId);
+    const itemSnap = await itemRef.get();
+
+    if (itemSnap.exists) {
+      const itemData = itemSnap.data();
+      const prevRating = itemData.rating || 0;
+      const prevCount = itemData.ratingCount || 0;
+
+      const newCount = prevCount + 1;
+      const newAverage = ((prevRating * prevCount) + rating) / newCount;
+
+      await itemRef.update({
+        rating: parseFloat(newAverage.toFixed(2)),
+        ratingCount: newCount,
+      });
+    }
+
+    res.status(201).json({ message: '리뷰가 저장되었고 평점이 반영되었습니다.', reviewId: docRef.id });
   } catch (err) {
     console.error('리뷰 저장 실패:', err);
     res.status(500).json({ error: '리뷰 저장 중 오류가 발생했습니다.' });
