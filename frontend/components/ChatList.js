@@ -138,14 +138,30 @@ const ChatList = () => {
 export default ChatList;
 
 const styles = StyleSheet.create({
-	wrapper: { flex: 1, backgroundColor: '#fff' },
-	container: {
-		flex: 1,
-		paddingHorizontal: 20,
-		paddingTop: 20,
-		paddingBottom: 100,
-	},
-	footer: { position: 'absolute', bottom: 0, width: '100%', height: height * 0.115 },
-	title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-	ratingText: { fontSize: 14, color: '#666', marginLeft: 12, marginBottom: 8 },
+  wrapper: { 
+    flex: 1, 
+    backgroundColor: '#fff' 
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 100,
+  },
+  footer: { 
+    position: 'absolute', 
+    bottom: 0, 
+    width: '100%', 
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginBottom: 20 
+  },
+  ratingText: { 
+    fontSize: 14, 
+    color: '#666', 
+    marginLeft: 12, 
+    marginBottom: 8 
+  },
 });

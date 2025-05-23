@@ -9,13 +9,18 @@ import {
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 
-const API_URL = 'http://192.168.0.6:3000';
+
+const API_URL = 'http://172.30.1.76:3000';
+
 
 export default function ReviewList() {
   const route = useRoute();
   const params = route?.params || {};
   const userId = params.userId || '';
   const type = params.type || 'received';
+
+
+
 
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);

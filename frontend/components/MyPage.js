@@ -88,8 +88,7 @@ const MyPage = ({ navigation }) => {
 				</TouchableOpacity>
 			</View>
 
-			{/* 푸터바 */}
-			<View style={styles.container2}>
+			<View style={styles.footer}>
 				<Footer navigation={navigation} />
 			</View>
 		</View>
@@ -110,7 +109,7 @@ const styles = StyleSheet.create({
 		paddingBottom: 100, // Footer 공간 확보
 		alignItems: 'center',
 	},
-	container2: {
+	footer: {
 		position: 'absolute',
 		bottom: 0,
 		width: '100%',
