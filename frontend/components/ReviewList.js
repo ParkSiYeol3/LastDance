@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-<<<<<<< HEAD
 import {
   View,
   Text,
@@ -29,7 +28,7 @@ export default function ReviewList() {
       if (!userId || !type) return;
       const res = await fetch(`${API_URL}/api/reviews/${type}/${userId}`);
       const json = await res.json();
-      console.log('📦 받아온 전체 응답:', json); // 디버깅용
+      console.log('📦 받아온 전체 응답:', json);
       setReviews(Array.isArray(json.reviews) ? json.reviews : []);
     } catch (err) {
       console.error('리뷰 불러오기 실패:', err);
@@ -40,7 +39,6 @@ export default function ReviewList() {
 
   const fetchAverage = async () => {
     try {
-      if (!userId) return;
       const res = await fetch(`${API_URL}/api/reviews/average/${userId}`);
       const json = await res.json();
       setAverageRating(json.average);
@@ -49,49 +47,12 @@ export default function ReviewList() {
       console.error('평균 별점 불러오기 실패:', err);
     }
   };
-=======
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 
-const API_URL = 'http:///10.20.76.18:3000';
+  useEffect(() => {
+    fetchReviews();
+    if (type === 'received') fetchAverage();
+  }, []);
 
-export default function ReviewList({ route }) {
-	const { userId, type } = route.params;
-	const [reviews, setReviews] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [averageRating, setAverageRating] = useState(null);
-	const [reviewCount, setReviewCount] = useState(null);
-	const [sortType, setSortType] = useState('latest'); // 'latest' or 'rating'
-
-	const fetchReviews = async () => {
-		try {
-			const res = await fetch(`${API_URL}/api/reviews/${type}/${userId}`);
-			const json = await res.json();
-			setReviews(json.reviews);
-		} catch (err) {
-			console.error('리뷰 불러오기 실패:', err);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const fetchAverage = async () => {
-		try {
-			const res = await fetch(`${API_URL}/api/reviews/average/${userId}`);
-			const json = await res.json();
-			setAverageRating(json.average);
-			setReviewCount(json.count);
-		} catch (err) {
-			console.error('평균 별점 불러오기 실패:', err);
-		}
-	};
->>>>>>> 94f7e470e02794912e941516186b0923bf43c2ce
-
-	useEffect(() => {
-		fetchReviews();
-		if (type === 'received') fetchAverage();
-	}, []);
-
-<<<<<<< HEAD
   const getSortedReviews = () => {
     if (!Array.isArray(reviews)) return [];
     if (sortType === 'rating') {
@@ -109,82 +70,65 @@ export default function ReviewList({ route }) {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.reviewCard}>
-      <Text style={styles.nickname}>👤 작성자 UID: {item.reviewerId}</Text>
-      <Text style={styles.rating}>⭐ 별점: {item.rating}점</Text>
-      <Text style={styles.rentalItemName}>🧥 아이템 UID: {item.rentalItemId}</Text>
+const renderItem = ({ item }) => (
+  <View style={styles.reviewCard}>
+    {/* 👤 닉네임 표시 */}
+    <Text style={styles.nickname}>
+      👤 작성자: {item.reviewerProfile?.nickname || item.reviewerId}
+    </Text>
 
-      {item.content ? (
-        <Text style={styles.content}>📝 {item.content}</Text>
-      ) : (
-        <Text style={styles.content}>(내용 없음)</Text>
+    {/* ⭐ 별점 */}
+    <Text style={styles.rating}>⭐ 별점: {item.rating}점</Text>
+
+    {/* 🧥 상품 이름 */}
+    <Text style={styles.rentalItemName}>
+      🧥 아이템: {item.rentalItemName || item.rentalItemId}
+    </Text>
+
+    {/* 📝 내용 */}
+    <Text style={styles.content}>
+      📝 {item.content || '(내용 없음)'}
+    </Text>
+
+    {/* 📌 요약 */}
+    {item.summary && (
+      <Text style={styles.summary}>📌 {item.summary}</Text>
+    )}
+
+    {/* 🏷️ 태그 */}
+    <View style={styles.tags}>
+      {Array.isArray(item.tags) &&
+        item.tags.map((tag) => (
+          <Text key={tag} style={styles.tag}>{tag}</Text>
+        ))}
+    </View>
+
+    {/* 📅 작성일 */}
+    <Text style={styles.date}>
+      {item.createdAt?.seconds
+        ? new Date(item.createdAt.seconds * 1000).toLocaleString()
+        : ''}
+    </Text>
+  </View>
+);
+
+
+  if (loading) {
+    return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>
+        {type === 'received' ? '받은 리뷰' : '작성한 리뷰'}
+      </Text>
+
+      {type === 'received' && averageRating !== null && (
+        <Text style={styles.average}>
+          🌟 평균 별점: {averageRating}점 ({reviewCount}개 리뷰)
+        </Text>
       )}
 
-      <View style={styles.tags}>
-        {Array.isArray(item.tags) &&
-          item.tags.map((tag) => (
-            <Text key={tag} style={styles.tag}>{tag}</Text>
-          ))}
-      </View>
-      <Text style={styles.date}>
-        {item.createdAt?.seconds
-          ? new Date(item.createdAt.seconds * 1000).toLocaleString()
-          : ''}
-      </Text>
-    </View>
-  );
-=======
-	// 🔁 정렬된 리뷰 리스트 반환
-	const getSortedReviews = () => {
-		if (sortType === 'rating') {
-			return [...reviews].sort((a, b) => b.rating - a.rating);
-		} else {
-			return [...reviews].sort((a, b) => {
-				const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
-				const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
-				return bTime - aTime;
-			});
-		}
-	};
-
-	const renderItem = ({ item }) => (
-		<View style={styles.card}>
-			<View style={styles.profileRow}>
-				{item.reviewerProfile?.profileImage ? <Image source={{ uri: item.reviewerProfile.profileImage }} style={styles.profileImage} /> : <View style={styles.profilePlaceholder} />}
-				<Text style={styles.nickname}>{item.reviewerProfile?.nickname || '알 수 없음'} 님</Text>
-			</View>
-
-			<Text style={styles.rating}>⭐ {item.rating}점</Text>
-			{item.summary ? <Text style={styles.summary}>{item.summary}</Text> : null}
-			<Text style={styles.content}>{item.content}</Text>
-			<View style={styles.tags}>
-				{item.tags?.map((tag) => (
-					<Text key={tag} style={styles.tag}>
-						{tag}
-					</Text>
-				))}
-			</View>
-			<Text style={styles.date}>{item.createdAt?.toDate ? new Date(item.createdAt.toDate()).toLocaleString() : ''}</Text>
-		</View>
-	);
->>>>>>> 94f7e470e02794912e941516186b0923bf43c2ce
-
-	if (loading) {
-		return <ActivityIndicator size='large' style={{ marginTop: 50 }} />;
-	}
-
-	return (
-		<View style={styles.container}>
-			<Text style={styles.title}>{type === 'received' ? '받은 리뷰' : '작성한 리뷰'}</Text>
-
-			{type === 'received' && averageRating !== null && (
-				<Text style={styles.average}>
-					🌟 평균 별점: {averageRating}점 ({reviewCount}개 리뷰)
-				</Text>
-			)}
-
-<<<<<<< HEAD
       <View style={styles.sortRow}>
         <TouchableOpacity
           style={[styles.sortButton, sortType === 'latest' && styles.sortSelected]}
@@ -208,10 +152,8 @@ export default function ReviewList({ route }) {
 
       <FlatList
         data={getSortedReviews()}
-        scrollEnabled={false}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        initialNumToRender={5}
         contentContainerStyle={{ paddingBottom: 50 }}
       />
     </View>
@@ -254,7 +196,7 @@ const styles = StyleSheet.create({
   nickname: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 6,
+    marginBottom: 4,
     color: '#444',
   },
   rentalItemName: {
@@ -262,9 +204,28 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 4,
   },
-  rating: { fontSize: 16, fontWeight: '600', color: '#FFD700' },
-  content: { fontSize: 14, marginTop: 6, color: '#444' },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
+  rating: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFD700',
+    marginBottom: 4,
+  },
+  content: {
+    fontSize: 14,
+    marginBottom: 6,
+    color: '#444',
+  },
+  summary: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 6,
+  },
+  tags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 6,
+  },
   tag: {
     fontSize: 12,
     color: '#00bcd4',
@@ -275,100 +236,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   date: {
-    marginTop: 6,
     fontSize: 12,
     color: '#999',
     textAlign: 'right',
   },
-=======
-			{/* 🔽 정렬 버튼 */}
-			<View style={styles.sortRow}>
-				<TouchableOpacity style={[styles.sortButton, sortType === 'latest' && styles.sortSelected]} onPress={() => setSortType('latest')}>
-					<Text style={styles.sortText}>최신순</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={[styles.sortButton, sortType === 'rating' && styles.sortSelected]} onPress={() => setSortType('rating')}>
-					<Text style={styles.sortText}>별점순</Text>
-				</TouchableOpacity>
-			</View>
-
-			<FlatList data={getSortedReviews()} keyExtractor={(item) => item.id} renderItem={renderItem} contentContainerStyle={{ paddingBottom: 50 }} />
-		</View>
-	);
-}
-
-const styles = StyleSheet.create({
-	container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-	title: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-	average: { fontSize: 16, fontWeight: '600', marginBottom: 12, color: '#333' },
-	sortRow: {
-		flexDirection: 'row',
-		justifyContent: 'flex-start',
-		marginBottom: 12,
-	},
-	sortButton: {
-		paddingVertical: 6,
-		paddingHorizontal: 12,
-		borderRadius: 20,
-		borderWidth: 1,
-		borderColor: '#ccc',
-		marginRight: 8,
-	},
-	sortSelected: {
-		backgroundColor: '#00bcd4',
-		borderColor: '#00bcd4',
-	},
-	sortText: {
-		color: '#000',
-		fontWeight: '500',
-	},
-	card: {
-		borderWidth: 1,
-		borderColor: '#ddd',
-		borderRadius: 10,
-		padding: 16,
-		marginBottom: 12,
-		backgroundColor: '#f9f9f9',
-	},
-	profileRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		marginBottom: 10,
-	},
-	profileImage: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
-		marginRight: 10,
-	},
-	profilePlaceholder: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
-		marginRight: 10,
-		backgroundColor: '#ccc',
-	},
-	nickname: {
-		fontSize: 15,
-		fontWeight: 'bold',
-	},
-	rating: { fontSize: 18, fontWeight: '600', color: '#FFD700' },
-	summary: { fontSize: 16, fontWeight: 'bold', marginTop: 4 },
-	content: { fontSize: 14, marginTop: 6, color: '#444' },
-	tags: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
-	tag: {
-		fontSize: 12,
-		color: '#00bcd4',
-		marginRight: 8,
-		backgroundColor: '#e0f7fa',
-		paddingHorizontal: 6,
-		paddingVertical: 2,
-		borderRadius: 10,
-	},
-	date: {
-		marginTop: 6,
-		fontSize: 12,
-		color: '#999',
-		textAlign: 'right',
-	},
->>>>>>> 94f7e470e02794912e941516186b0923bf43c2ce
 });
