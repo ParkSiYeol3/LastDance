@@ -51,6 +51,7 @@ const CommentSection = ({ itemId, currentUser }) => {
 			<Text style={styles.header}>💬 댓글</Text>
 			<FlatList
 				data={comments}
+				scrollEnabled={false}
 				keyExtractor={(item) => item.id}
 				renderItem={({ item }) => (
 					<View style={styles.comment}>

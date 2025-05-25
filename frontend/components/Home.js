@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, TextInput, FlatList, Image, StyleSheet, TouchableOpacity
-} from 'react-native';
-import { collection, getDocs, query, orderBy, updateDoc, doc } from 'firebase/firestore';
+  View, Text, TextInput, FlatList, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { collection, getDocs, query, orderBy, updateDoc, doc, onSnapshot, where, } from 'firebase/firestore';
 import { db } from '../firebase-config';
 import { getAuth } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
@@ -14,29 +13,50 @@ const Home = () => {
   const [search, setSearch] = useState('');
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const auth = getAuth();
-    setCurrentUser(auth.currentUser);
-    fetchPosts();
-  }, []);
+   const fetchAverageRating = async (itemId) => {
+    try {
+      const reviewsRef = collection(db, 'reviews');
+      const q = query(reviewsRef, where('rentalItemId', '==', itemId));
+      const snapshot = await getDocs(q);
 
-  const fetchPosts = async () => {
-    const q = query(collection(db, 'items'), orderBy('timestamp', 'desc'));
-    const querySnapshot = await getDocs(q);
-    const fetchedPosts = [];
-    querySnapshot.forEach((doc) => {
-      fetchedPosts.push({ id: doc.id, ...doc.data() });
-    });
-    setPosts(fetchedPosts);
+      const ratings = snapshot.docs.map(doc => doc.data().rating).filter(Boolean);
+      const average = ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
+        : 0;
+
+      return { average: Number(average.toFixed(1)), count: ratings.length };
+    } catch (err) {
+      console.error(`평점 불러오기 실패 (${itemId}):`, err);
+      return { average: 0, count: 0 };
+    }
   };
 
-  const handleLike = async (itemId, likedBy, isLiked) => {
+  useEffect(() => {
+  const auth = getAuth();
+  setCurrentUser(auth.currentUser);
+
+    const q = query(collection(db, 'items'), orderBy('timestamp', 'desc'));
+
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+      const fetchedPosts = await Promise.all(
+        querySnapshot.docs.map(async (doc) => {
+          const item = { id: doc.id, ...doc.data() };
+          const { average, count } = await fetchAverageRating(item.id);
+          return { ...item, rating: average, ratingCount: count };
+        })
+      );
+      setPosts(fetchedPosts);
+    });
+
+    return () => unsubscribe(); // 컴포넌트 unmount 시 구독 해제
+  }, []);
+    
+  const handleLike = async (itemId, likedBy = [], isLiked) => {
     const itemRef = doc(db, 'items', itemId);
     const updatedLikes = isLiked
       ? likedBy.filter((uid) => uid !== currentUser.uid)
       : [...likedBy, currentUser.uid];
     await updateDoc(itemRef, { likedBy: updatedLikes });
-    fetchPosts();
   };
 
   const filteredPosts = posts.filter(p =>
@@ -45,7 +65,7 @@ const Home = () => {
 
   const renderItem = ({ item }) => {
     const isMine = currentUser && item.userId === currentUser.uid;
-    const isLiked = item.likedBy?.includes(currentUser?.uid);
+    const isLiked = (item.likedBy || []).includes(currentUser?.uid);
 
     return (
       <TouchableOpacity
@@ -55,7 +75,7 @@ const Home = () => {
       >
         {item.imageURL && <Image source={{ uri: item.imageURL }} style={styles.image} />}
         <View style={styles.infoBox}>
-          <Text style={styles.brand}>{item.brand || '브랜드명'}</Text>
+          <Text style={styles.brand}>{item.brand || '브랜드'}</Text>
           <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
 
           <View style={styles.metaRow}>
@@ -64,22 +84,16 @@ const Home = () => {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Image
-                source={
-                  isLiked
-                    ? require('../assets/heart.png')
-                    : require('../assets/BIN_heart.png')
-                }
+                source={isLiked
+                  ? require('../assets/heart.png')
+                  : require('../assets/BIN_heart.png')}
                 style={styles.heartIcon}
               />
             </TouchableOpacity>
-            <Text style={styles.metaText}>
-              {item.likedBy?.length || 0}
-            </Text>
 
-            <Image
-              source={require('../assets/star.png')}
-              style={styles.starIcon}
-            />
+            <Text style={styles.metaText}>{item.likedBy?.length || 0}</Text>
+
+            <Image source={require('../assets/star.png')} style={styles.starIcon} />
             <Text style={styles.metaText}>
               {item.rating?.toFixed(1) || '0.0'} ({item.ratingCount || 0})
             </Text>
@@ -128,6 +142,17 @@ const Home = () => {
         columnWrapperStyle={{ justifyContent: 'space-between' }}
         contentContainerStyle={{ paddingBottom: 100 }}
       />
+
+      {/* 글쓰기 버튼 */}  
+      <TouchableOpacity
+        style={styles.writeButton}
+        onPress={() => navigation.navigate('Write')}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Image source={require('../assets/Write.png')} style={styles.writeIcon} />
+          <Text style={styles.writeText}>글쓰기</Text>
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.footer}>
         <Footer navigation={navigation} />
@@ -237,6 +262,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  metaBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  metaIcon: {
+    width: 14,
+    height: 14,
+    resizeMode: 'contain',
+  },
+  metaText: {
+    fontSize: 13,
+    color: '#444',
+    marginLeft: 4,
+  },
   heartIcon: {
     width: 16,
     height: 16,
@@ -248,13 +288,32 @@ const styles = StyleSheet.create({
     tintColor: '#FFD700',
     marginLeft: 8,
   },
-  metaText: {
-    fontSize: 12,
-    color: '#444',
+  writeButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    backgroundColor: '#4CAF50',
+    borderRadius: 30,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    elevation: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  writeIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 6,
+    tintColor: '#fff',
+  },
+  writeText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   footer: {
     position: 'absolute',
 		bottom: 0,
+    height: 83,
 		width: '108%',
   },
 });

@@ -3,9 +3,10 @@ import {
   View, Text, Image, StyleSheet, ScrollView, Alert, TouchableOpacity
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '../firebase-config';
+import { API_URL, db } from '../firebase-config';
 import CommentSection from './CommentSection';
 import RentalHistory from './RentalHistory';
 import EditItemForm from './EditItemForm';
@@ -78,24 +79,31 @@ const ItemDetail = () => {
   };
 
   const toggleLike = async () => {
+    if (!currentUser || !itemId) return;
+
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const url = `${API_URL}/api/items/${itemId}/like`;
-      if (liked) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-          data: { userId: currentUser?.uid },
-        });
-      } else {
-        await axios.post(url, { userId: currentUser?.uid }, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-      setLiked(!liked);
-    } catch (err) {
-      console.error('좋아요 처리 실패:', err);
+      const itemRef = doc(db, 'items', itemId);
+      const itemSnap = await getDoc(itemRef);
+
+    if (!itemSnap.exists()) {
+      console.warn('아이템 문서가 존재하지 않음');
+      return;
     }
-  };
+
+    const likedBy = itemSnap.data().likedBy || [];
+    const isLiked = likedBy.includes(currentUser.uid);
+
+    const updatedLikes = isLiked
+      ? likedBy.filter((uid) => uid !== currentUser.uid)
+      : [...likedBy, currentUser.uid];
+
+    await updateDoc(itemRef, { likedBy: updatedLikes });
+
+    setLiked(!isLiked);
+  } catch (err) {
+    console.error('좋아요 처리 실패:', err);
+  }
+};
 
   const handleRentalRequest = async () => {
     const token = await AsyncStorage.getItem('accessToken');
@@ -151,7 +159,7 @@ const ItemDetail = () => {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} nestedScrollEnabled={true}>
       <View style={styles.imageBox}>
         {item.imageURL && (
           <Image source={{ uri: item.imageURL }} style={styles.image} />
