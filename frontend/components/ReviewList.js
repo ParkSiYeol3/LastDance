@@ -10,7 +10,7 @@ import {
 import { useRoute } from '@react-navigation/native';
 
 
-const API_URL = 'http://172.30.1.14:3000';
+const API_URL = 'http://172.30.1.92:3000';
 
 
 export default function ReviewList() {

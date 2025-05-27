@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Dimensions, ActivityIndicator, Text, Image } from 'react-native';
+import { StyleSheet, View, Dimensions, ActivityIndicator, Text, Image, TouchableOpacity } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { collection, getDocs } from 'firebase/firestore';
@@ -10,6 +10,7 @@ export default function MapScreen() {
 	const [location, setLocation] = useState(null);
 	const [items, setItems] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [selectedItem, setSelectedItem] = useState(null);
 	const navigation = useNavigation();
 
 	const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -69,33 +70,55 @@ export default function MapScreen() {
 	}
 
 	return (
-		<View style={styles.container}>
-			<MapView
-				style={styles.map}
-				initialRegion={{
-					latitude: location.latitude,
-					longitude: location.longitude,
-					latitudeDelta: 0.02,
-					longitudeDelta: 0.02,
-				}}
-			>
-				{/* 내 위치 마커 */}
-				<Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }} title='내 위치' pinColor='blue' />
+  	<View style={styles.container}>
+    	<MapView
+      	style={styles.map}
+      	initialRegion={{
+        	latitude: location.latitude,
+        	longitude: location.longitude,
+        	latitudeDelta: 0.02,
+        	longitudeDelta: 0.02,
+      	}}
+    	>
+      	{/* 내 위치 마커 */}
+      	<Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }} title='내 위치' pinColor='blue' />
 
-				{/* 아이템 카드 마커 */}
-				{items.map((item) => (
-					<Marker key={item.id} coordinate={{ latitude: item.latitude, longitude: item.longitude }} onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}>
-						<View style={styles.customMarker}>
-							{item.imageURL && <Image source={{ uri: item.imageURL }} style={styles.markerImage} />}
-							<Text style={styles.markerTitle} numberOfLines={1}>
-								{item.name}
-							</Text>
-							<Text style={styles.markerDistance}>{item.distance.toFixed(1)} km</Text>
-						</View>
-					</Marker>
-				))}
-			</MapView>
-		</View>
+      	{/* 아이템 카드 마커 */}
+      	{items.map((item) => (
+			<Marker
+  			key={item.id}
+  			coordinate={{ latitude: item.latitude, longitude: item.longitude }}
+  			onPress={() => setSelectedItem(item)}
+			>
+  			<Image
+    			source={require('../assets/marker.png')}
+    			style={{ width: 40, height: 40 }} // ✅ 여기서 직접 조절
+    			resizeMode="contain"
+  			/>
+			</Marker>
+      	))}
+    	</MapView>
+
+    	{selectedItem && (
+      	<View style={styles.bottomCard}>
+        	<Image source={{ uri: selectedItem.imageURL }} style={styles.cardImage} />
+        	<View style={styles.cardTextBox}>
+          	<Text style={styles.cardTitle}>{selectedItem.name}</Text>
+          	<Text style={styles.cardDistance}>{selectedItem.distance.toFixed(1)}km 근처</Text>
+          	<Text style={styles.cardPrice}>대여비: {selectedItem.price || '가격 정보 없음'}원</Text>
+          	<TouchableOpacity
+            	style={styles.detailButton}
+            	onPress={() => {
+              	navigation.navigate('ItemDetail', { itemId: selectedItem.id });
+              	setSelectedItem(null);
+            	}}
+          	>
+            	<Text style={{ color: '#fff', fontWeight: 'bold' }}>상세 보기</Text>
+          	</TouchableOpacity>
+        	</View>
+      	</View>
+    	)}
+  	</View>
 	);
 }
 
@@ -148,5 +171,55 @@ const styles = StyleSheet.create({
 	markerDistance: {
 		fontSize: 14,
 		color: '#555',
+	},
+	bottomCard: {
+  		position: 'absolute',
+  		bottom: 30,
+  		left: 20,
+  		right: 20,
+  		flexDirection: 'row',
+  		backgroundColor: '#ffffff',
+  		borderRadius: 16,
+  		padding: 16,
+  		elevation: 6,
+  		shadowColor: '#000',
+  		shadowOpacity: 0.15,
+  		shadowOffset: { width: 0, height: 3 },
+  		shadowRadius: 6,
+  		alignItems: 'center',
+	},
+	cardImage: {
+		width: 64,
+		height: 64,
+		borderRadius: 8,
+		marginRight: 12,
+		backgroundColor: '#f0f0f0',
+	},
+	cardTextBox: {
+		flex: 1,
+		justifyContent: 'center',
+	},
+	cardTitle: {
+		fontSize: 17,
+		fontWeight: 'bold',
+		color: '#333',
+	},
+	cardDistance: {
+		fontSize: 13,
+		color: '#666',
+		marginTop: 4,
+	},
+	cardPrice: {
+		fontSize: 13,
+		color: '#333',
+		marginTop: 2,
+	},
+	detailButton: {
+		marginTop: 8,
+		backgroundColor: '#4CAF50',
+		paddingVertical: 6,
+		paddingHorizontal: 14,
+		borderRadius: 6,
+		alignSelf: 'flex-start',
 	},
 });
