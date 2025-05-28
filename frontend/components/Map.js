@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
 	},
 	detailButton: {
 		marginTop: 8,
-		backgroundColor: '#4CAF50',
+		backgroundColor: '#31c585',
 		paddingVertical: 6,
 		paddingHorizontal: 14,
 		borderRadius: 6,

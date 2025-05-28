@@ -37,33 +37,35 @@ const SalesHistory = ({ navigation }) => {
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>나의 판매내역</Text>
+          <Text style={styles.headerText}>나의 거래내역</Text>
           <View style={styles.profileCircle}>
             <Text style={styles.profileText}>😊</Text>
           </View>
         </View>
 
         <View style={styles.tab}>
-          <Text style={styles.tabActive}>거래내역 {salesData.length}</Text>
+          <Text style={styles.tabActive}>판매내역 {salesData.length}</Text>
         </View>
 
         {salesData.map(item => (
           <View key={item.id} style={styles.itemContainer}>
             <View style={styles.itemContent}>
-              {/* <Image style={styles.itemImage} source={require('../assets/sample.png')} /> */}
+              <Image
+                style={styles.itemImage}
+                source={require('../assets/shoes.png')} // 또는 item.image 경로로 확장 가능
+              />
               <View style={styles.itemDetails}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
                 <Text style={styles.itemLocation}>{item.location}</Text>
-                <Text style={styles.itemPrice}>{item.price}</Text>
-                <View style={styles.itemStatusContainer}>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.itemPrice}>{item.price}</Text>
                   <Text style={styles.itemStatus}>{item.status}</Text>
                 </View>
+                <View style={styles.interactionBar}>
+                <Text style={styles.iconText}>💬 {item.comments}</Text>
+                  <Text style={styles.iconText}>❤️ {item.likes}</Text>
+                </View>
               </View>
-            </View>
-
-            <View style={styles.interactionBar}>
-              <Text>💬 {item.comments}</Text>
-              <Text>❤️ {item.likes}</Text>
             </View>
           </View>
         ))}
@@ -121,45 +123,54 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   itemContainer: {
-    paddingVertical: 15,
+    paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#f0f0f0',
   },
   itemContent: {
     flexDirection: 'row',
   },
   itemImage: {
     width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 10,
+    height: 60,
+    borderRadius: 6,
+    marginRight: 12,
   },
   itemDetails: {
-    justifyContent: 'space-around',
+    flex: 1,
+    justifyContent: 'space-between',
   },
   itemTitle: {
     fontSize: 16,
     fontWeight: 'bold',
+    marginBottom: 4,
   },
   itemLocation: {
-    color: '#666',
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 6,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   itemPrice: {
+    fontSize: 14,
     fontWeight: 'bold',
-  },
-  itemStatusContainer: {
-    backgroundColor: '#ddd',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
   },
   itemStatus: {
     fontSize: 12,
+    color: '#aaa',
   },
   interactionBar: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 5,
+    marginTop: 8,
+  },
+  iconText: {
+    fontSize: 12,
+    color: '#666',
+    marginRight: 10,
   },
   footer: {
     position: 'absolute',

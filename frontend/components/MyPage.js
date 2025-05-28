@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image, ScrollView } from 'react-native';
 import Footer from '../components/Footer';
 import gearIcon from '../assets/gear.png';
-import { db } from '../firebase-config'; // ✅ Firestore 연결
+import { db } from '../firebase-config';
 import { getDoc, doc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MyPage = ({ navigation }) => {
-	const [userData, setUserData] = useState(null); // 사용자 데이터
+	const [userData, setUserData] = useState(null);
 
 	useEffect(() => {
 		const fetchUserData = async () => {
 			try {
-				const userId = await AsyncStorage.getItem('userId'); // 저장된 userId 가져오기
+				const userId = await AsyncStorage.getItem('userId');
 				if (!userId) {
 					console.log('userId 없음');
 					return;
@@ -41,52 +41,43 @@ const MyPage = ({ navigation }) => {
 	if (!userData) {
 		return (
 			<View style={styles.screen}>
-				<StatusBar barStyle='dark-content' />
+				<StatusBar barStyle="dark-content" />
 				<Text>로딩 중...</Text>
 			</View>
 		);
 	}
+
 	return (
 		<View style={styles.screen}>
-			<StatusBar barStyle='dark-content' />
-
-			{/* 톱니바퀴 버튼 */}
-			<TouchableOpacity style={styles.gearButton} onPress={openSettings}>
-				<Image source={gearIcon} style={styles.gearIcon} />
-			</TouchableOpacity>
-
-			{/* 내용 영역 */}
-			<View style={styles.container1}>
+			<StatusBar barStyle="dark-content" />
+				{/* 프로필 박스 */}
 				<View style={styles.profileBox}>
-					<Text style={styles.profileText}>{userData.name} 님</Text>
-					<Text style={styles.addressText}>
-						이메일: {userData.email}
-						{'\n'}
-						우편번호: {userData.zipcode}
-						{'\n'}
-						주소: {userData.address}
-					</Text>
+					<Image
+						source={{ uri: userData.profileImage || 'https://via.placeholder.com/60' }}
+						style={styles.profileImage}
+					/>
+					<View style={styles.profileInfo}>
+						<Text style={styles.nickname}>{userData.name} 님</Text>
+						<Text style={styles.trust}>
+							<Image source={require('../assets/star.png')} style={styles.starIcon} />
+							{userData.trustScore ?? '0.0'}
+						</Text>
+					</View>
+					<TouchableOpacity onPress={openSettings} style={styles.gearButton}>
+						<Image source={gearIcon} style={styles.gearIcon} />
+					</TouchableOpacity>
 				</View>
 
-				<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SalesHistory')}>
-					<Text>🧾 거래 내역</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Favorites')}>
-					<Text>⭐ 즐겨찾기</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Deposit')}>
-					<Text>💳 보증금 결제 수단</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Rank')}>
-					<Text>👤 등급별 혜택 안내</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Notice')}>
-					<Text>📢 공지사항</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('RentalRequests')}>
-					<Text>📩 승인 요청 내역</Text>
-				</TouchableOpacity>
-			</View>
+			<ScrollView contentContainerStyle={styles.content}>
+				<View style={styles.menuList}>
+					<MenuItem label="🧾 거래 내역" onPress={() => navigation.navigate('SalesHistory')} />
+					<MenuItem label="♥️ 좋아요" onPress={() => navigation.navigate('Favorites')} />
+					<MenuItem label="💳 보증금 결제 수단" onPress={() => navigation.navigate('Deposit')} />
+					<MenuItem label="👤 등급별 혜택 안내" onPress={() => navigation.navigate('Rank')} />
+					<MenuItem label="📢 공지사항" onPress={() => navigation.navigate('Notice')} />
+					<MenuItem label="📩 승인 요청 내역" onPress={() => navigation.navigate('RentalRequests')} />
+				</View>
+			</ScrollView>
 
 			<View style={styles.footer}>
 				<Footer navigation={navigation} />
@@ -95,67 +86,109 @@ const MyPage = ({ navigation }) => {
 	);
 };
 
+const MenuItem = ({ label, onPress }) => (
+	<TouchableOpacity style={styles.menuItem} onPress={onPress}>
+		<Text style={styles.menuText}>{label}</Text>
+		<Text style={styles.arrow}>{'>'}</Text>
+	</TouchableOpacity>
+);
+
 export default MyPage;
 
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
 		backgroundColor: '#ffffff',
-		alignItems: 'center',
 	},
-	container1: {
-		width: '100%',
-		paddingTop: 30,
-		paddingBottom: 100, // Footer 공간 확보
-		alignItems: 'center',
+	content: {
+		padding: 20,
+		paddingBottom: 100,
 	},
 	footer: {
 		position: 'absolute',
 		bottom: 0,
+		height: 90,
 		width: '100%',
 	},
 	profileBox: {
-		width: '90%',
-		backgroundColor: '#E7EFF6',
-		padding: 15,
-		borderColor: '#000000',
-		borderWidth: 1,
-		borderRadius: 10,
-		marginBottom: 20,
-		elevation: 3,
-	},
-	profileText: {
-		fontWeight: 'bold',
-		marginBottom: 5,
-		color: '#1e272e',
-	},
-	addressText: {
-		fontSize: 12,
-		color: '#1e272e',
-	},
-	button: {
-		width: '90%',
-		height: 45,
-		backgroundColor: '#E7EFF6',
-		borderColor: '#000000',
-		borderWidth: 1,
-		borderRadius: 8,
-		justifyContent: 'center',
+		flexDirection: 'row',
 		alignItems: 'center',
-		marginVertical: 6,
-		marginBottom: 15,
-		elevation: 2,
+		backgroundColor: '#e8f0fe',
+		padding: 20,
+		borderRadius: 50,
+		marginTop: 10,
+		marginBottom: 20,
+	},
+	profileImage: {
+		width: 60,
+		height: 60,
+		borderRadius: 30,
+		marginRight: 16,
+	},
+	profileInfo: {
+		flex: 1,
+	},
+	nickname: {
+		fontSize: 18,
+		fontWeight: 'bold',
+	},
+	trust: {
+		fontSize: 14,
+		color: '#666',
+		marginTop: 4,
+	},
+	starIcon:{
+		width: 15,
+		height: 15,
 	},
 	gearButton: {
-		position: 'absolute',
-		top: 20,
-		right: 20,
-		zIndex: 10,
-		padding: 10,
+		padding: 6,
 	},
 	gearIcon: {
-		width: 24,
-		height: 24,
+		width: 22,
+		height: 22,
 		resizeMode: 'contain',
+	},
+	summaryBox: {
+		backgroundColor: '#31c585',
+		padding: 16,
+		borderRadius: 10,
+		marginBottom: 20,
+	},
+	summaryTitle: {
+		fontSize: 16,
+		fontWeight: 'bold',
+		marginBottom: 12,
+	},
+	summaryButtons: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+	},
+	smallButton: {
+		flex: 1,
+		backgroundColor: '#ffffff',
+		borderRadius: 6,
+		paddingVertical: 10,
+		alignItems: 'center',
+		marginHorizontal: 5,
+		borderWidth: 1,
+		borderColor: '#ccc',
+	},
+	menuList: {
+		marginTop: 10,
+	},
+	menuItem: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		paddingVertical: 16,
+		borderBottomWidth: 1,
+		borderColor: '#eee',
+	},
+	menuText: {
+		fontSize: 16,
+	},
+	arrow: {
+		fontSize: 18,
+		color: '#999',
 	},
 });

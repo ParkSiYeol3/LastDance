@@ -178,14 +178,14 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: '#31c585',
     borderRadius: 8,
     paddingHorizontal: 12,
     backgroundColor: '#fff',
   },
   searchButton: {
     marginLeft: 8,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#31c585',
     borderRadius: 8,
     padding: 10,
     justifyContent: 'center',
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
-    backgroundColor: '#4CAF50'
+    backgroundColor: '#31c585'
   },
   categoriesContainer: {
     flexDirection: 'row',
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   myPostBorder: {
     borderWidth: 1.5,
-    borderColor: '#4CAF50',
+    borderColor: '#31c585',
   },
   image: {
     width: '100%',
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 100,
     right: 20,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#31c585',
     borderRadius: 30,
     paddingVertical: 10,
     paddingHorizontal: 16,
