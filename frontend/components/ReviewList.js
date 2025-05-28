@@ -10,7 +10,8 @@ import {
 import { useRoute } from '@react-navigation/native';
 
 
-const API_URL = 'http://172.30.1.24:3000';
+const API_URL = 'http://221.160.227.171:3000';
+
 
 
 export default function ReviewList() {
@@ -114,6 +115,15 @@ const renderItem = ({ item }) => (
         ? new Date(item.createdAt.seconds * 1000).toLocaleString()
         : ''}
     </Text>
+
+    {/* 😊 감정 분석 결과 */}
+    {item.sentiment && (
+      <Text style={styles.sentiment}>
+        감정 분석: {item.sentiment === 'positive' ? '👍 긍정' :
+                    item.sentiment === 'negative' ? '👎 부정' :
+                    '😐 중립'}
+      </Text>
+)}
   </View>
 );
 
@@ -244,5 +254,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     textAlign: 'right',
+  },
+  sentiment: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#555',
+    marginTop: 6,
   },
 });

@@ -30,6 +30,7 @@ import StripeCheckoutScreen from './components/StripeCheckoutScreen';
 import ReviewForm from './components/ReviewForm';
 import ReviewList from './components/ReviewList'; // ← 이 줄 추가
 import RentalRequests from './components/RentalRequests';
+import AdminDashboard from './components/AdminDashboard';
 
 const Stack = createStackNavigator();
 
@@ -63,6 +64,7 @@ export default function App() {
 					<Stack.Screen name='ItemDetail' component={ItemDetail} />
 					<Stack.Screen name="ReviewList" component={ReviewList} options={{ title: '거래 후기' }} /> 
 					<Stack.Screen name='RentalRequests' component={RentalRequests} />
+					<Stack.Screen name="AdminDashboard" component={AdminDashboard} options={{ title: '감정 통계' }} />
 				</Stack.Navigator>
 			</NavigationContainer>
 		</StripeProvider>

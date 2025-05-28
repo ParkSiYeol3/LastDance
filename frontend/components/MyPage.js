@@ -70,12 +70,27 @@ const MyPage = ({ navigation }) => {
 
 			<ScrollView contentContainerStyle={styles.content}>
 				<View style={styles.menuList}>
-					<MenuItem label="🧾 거래 내역" onPress={() => navigation.navigate('SalesHistory')} />
-					<MenuItem label="♥️ 좋아요" onPress={() => navigation.navigate('Favorites')} />
-					<MenuItem label="💳 보증금 결제 수단" onPress={() => navigation.navigate('Deposit')} />
-					<MenuItem label="👤 등급별 혜택 안내" onPress={() => navigation.navigate('Rank')} />
-					<MenuItem label="📢 공지사항" onPress={() => navigation.navigate('Notice')} />
-					<MenuItem label="📩 승인 요청 내역" onPress={() => navigation.navigate('RentalRequests')} />
+					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SalesHistory')}>
+						<Text>🧾 거래 내역</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Favorites')}>
+						<Text>⭐ 즐겨찾기</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Deposit')}>
+						<Text>💳 보증금 결제 수단</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Rank')}>
+						<Text>👤 등급별 혜택 안내</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Notice')}>
+						<Text>📢 공지사항</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('RentalRequests')}>
+						<Text>📩 승인 요청 내역</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.adminButton} onPress={() => navigation.navigate('AdminDashboard')}>
+  						<Text>📊 관리자 통계 보기</Text>
+					</TouchableOpacity>
 				</View>
 			</ScrollView>
 
@@ -149,46 +164,11 @@ const styles = StyleSheet.create({
 		height: 22,
 		resizeMode: 'contain',
 	},
-	summaryBox: {
-		backgroundColor: '#31c585',
-		padding: 16,
-		borderRadius: 10,
-		marginBottom: 20,
-	},
-	summaryTitle: {
-		fontSize: 16,
-		fontWeight: 'bold',
-		marginBottom: 12,
-	},
-	summaryButtons: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-	},
-	smallButton: {
-		flex: 1,
-		backgroundColor: '#ffffff',
-		borderRadius: 6,
-		paddingVertical: 10,
-		alignItems: 'center',
-		marginHorizontal: 5,
-		borderWidth: 1,
-		borderColor: '#ccc',
-	},
-	menuList: {
-		marginTop: 10,
-	},
-	menuItem: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		paddingVertical: 16,
-		borderBottomWidth: 1,
-		borderColor: '#eee',
-	},
-	menuText: {
-		fontSize: 16,
-	},
-	arrow: {
-		fontSize: 18,
-		color: '#999',
+	adminButton: {
+  		marginTop: 20,
+  		backgroundColor: '#4CAF50',
+  		padding: 12,
+  		borderRadius: 10,
+  		alignItems: 'center',
 	},
 });
