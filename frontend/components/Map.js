@@ -92,7 +92,7 @@ export default function MapScreen() {
 			>
   			<Image
     			source={require('../assets/marker.png')}
-    			style={{ width: 40, height: 40 }} // ✅ 여기서 직접 조절
+    			style={{ width: 45, height: 45 }} // ✅ 여기서 직접 조절
     			resizeMode="contain"
   			/>
 			</Marker>

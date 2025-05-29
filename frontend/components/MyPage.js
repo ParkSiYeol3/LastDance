@@ -69,29 +69,18 @@ const MyPage = ({ navigation }) => {
 				</View>
 
 			<ScrollView contentContainerStyle={styles.content}>
-				<View style={styles.menuList}>
-					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SalesHistory')}>
-						<Text>🧾 거래 내역</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Favorites')}>
-						<Text>⭐ 즐겨찾기</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Deposit')}>
-						<Text>💳 보증금 결제 수단</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Rank')}>
-						<Text>👤 등급별 혜택 안내</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Notice')}>
-						<Text>📢 공지사항</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('RentalRequests')}>
-						<Text>📩 승인 요청 내역</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.adminButton} onPress={() => navigation.navigate('AdminDashboard')}>
-  						<Text>📊 관리자 통계 보기</Text>
-					</TouchableOpacity>
-				</View>
+  			<View style={styles.menuBox}>
+    			<MenuItem label="🧾 거래 내역" onPress={() => navigation.navigate('SalesHistory')} />
+    			<MenuItem label="♥️ 좋아요" onPress={() => navigation.navigate('Favorites')} />
+    			<MenuItem label="💳 보증금 수단" onPress={() => navigation.navigate('Deposit')} />
+    			<MenuItem label="👤 등급별 혜택 안내" onPress={() => navigation.navigate('Rank')} />
+    			<MenuItem label="📢 공지사항" onPress={() => navigation.navigate('Notice')} />
+				<MenuItem label="📩 승인 요청 내역" onPress={() => navigation.navigate('RentalRequests')} />
+  			</View>
+
+  			<TouchableOpacity style={styles.adminButton} onPress={() => navigation.navigate('AdminDashboard')}>
+    			<Text style={styles.adminButtonText}>📊 관리자 통계 보기</Text>
+  			</TouchableOpacity>
 			</ScrollView>
 
 			<View style={styles.footer}>
@@ -102,10 +91,10 @@ const MyPage = ({ navigation }) => {
 };
 
 const MenuItem = ({ label, onPress }) => (
-	<TouchableOpacity style={styles.menuItem} onPress={onPress}>
-		<Text style={styles.menuText}>{label}</Text>
-		<Text style={styles.arrow}>{'>'}</Text>
-	</TouchableOpacity>
+  <TouchableOpacity onPress={onPress} style={styles.menuItem}>
+    <Text style={styles.menuText}>{label}</Text>
+    <Text style={styles.menuArrow}>›</Text>
+  </TouchableOpacity>
 );
 
 export default MyPage;
@@ -164,11 +153,35 @@ const styles = StyleSheet.create({
 		height: 22,
 		resizeMode: 'contain',
 	},
+	menuBox: {
+  		borderTopWidth: 1,
+  		borderColor: '#eee',
+  		marginTop: 12,
+	},
+	menuItem: {
+  		flexDirection: 'row',
+  		justifyContent: 'space-between',
+  		paddingVertical: 16,
+  		borderBottomWidth: 1,
+  		borderColor: '#eee',
+	},
+	menuText: {
+  		fontSize: 16,
+	},
+	menuArrow: {
+  		fontSize: 20,
+  		color: '#999',
+	},
 	adminButton: {
   		marginTop: 20,
   		backgroundColor: '#4CAF50',
   		padding: 12,
   		borderRadius: 10,
   		alignItems: 'center',
+	},
+	adminButtonText: {
+  		color: 'white',
+  		fontSize: 14,
+  		fontWeight: '600',
 	},
 });

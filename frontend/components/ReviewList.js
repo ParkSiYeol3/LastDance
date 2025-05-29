@@ -10,7 +10,7 @@ import {
 import { useRoute } from '@react-navigation/native';
 
 
-const API_URL = 'http://221.160.227.171:3000';
+const API_URL = 'http://10.20.36.56:3000';
 
 
 

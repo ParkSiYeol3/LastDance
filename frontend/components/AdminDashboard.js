@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Progress from 'react-native-progress';
+import Footer from '../components/Footer';
 
-const API_URL = 'http://221.160.227.171:3000';
+const API_URL = 'http://172.30.1.64:3000';
 
 export default function AdminDashboard() {
   const navigation = useNavigation();
@@ -58,19 +59,15 @@ export default function AdminDashboard() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>판매자 리뷰 감정 통계</Text>
-      <TouchableOpacity
-        style={styles.homeButton}
-        onPress={() => navigation.navigate('Home')}
-      >
-        <Text style={styles.homeButtonText}>🏠 홈으로 이동</Text>
-      </TouchableOpacity>
-
       <FlatList
         data={data}
         keyExtractor={(item) => item.sellerId}
         renderItem={renderItem}
         contentContainerStyle={{ paddingBottom: 50 }}
       />
+      <View style={styles.footer}>
+        <Footer navigation={navigation} />
+      </View>
     </View>
   );
 }
@@ -113,5 +110,10 @@ const styles = StyleSheet.create({
   homeButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    width: '107%',
   },
 });
