@@ -8,6 +8,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const userRoutes = require('./routes/userRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/deposit', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 🔎 테스트용 기본 라우트
 app.get('/api/hello', (req, res) => {
