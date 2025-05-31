@@ -77,7 +77,7 @@ const MyPage = ({ navigation }) => {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.menuBox}>
-          <MenuItem label="🧾 거래 내역" onPress={() => navigation.navigate('SalesHistory')} />
+          <MenuItem label="🧾 보증금 결제 내역" onPress={() => navigation.navigate('SalesHistory')} />
           <MenuItem label="♥️ 좋아요" onPress={() => navigation.navigate('Favorites')} />
           <MenuItem label="💳 보증금 수단" onPress={() => navigation.navigate('Deposit')} />
           <MenuItem label="👤 등급별 혜택 안내" onPress={() => navigation.navigate('Rank')} />
