@@ -4,7 +4,9 @@ import { useNavigation } from '@react-navigation/native';
 import * as Progress from 'react-native-progress';
 import Footer from '../components/Footer';
 
-const API_URL = 'http://192.168.0.6:3000';
+
+const API_URL = 'http://192.168.219.42:3000';
+
 
 export default function AdminDashboard() {
   const navigation = useNavigation();

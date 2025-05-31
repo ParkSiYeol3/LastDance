@@ -3,7 +3,7 @@ import {
   View, Text, Image, StyleSheet, ScrollView, Alert, TouchableOpacity
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, query, where, getDoc, getDocs, updateDoc, deleteDoc  } from 'firebase/firestore';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL, db } from '../firebase-config';
@@ -78,12 +78,12 @@ const ItemDetail = () => {
     }
   };
 
-  const toggleLike = async () => {
-    if (!currentUser || !itemId) return;
+ const toggleLike = async () => {
+  if (!currentUser || !itemId) return;
 
-    try {
-      const itemRef = doc(db, 'items', itemId);
-      const itemSnap = await getDoc(itemRef);
+  try {
+    const itemRef = doc(db, 'items', itemId);
+    const itemSnap = await getDoc(itemRef);
 
     if (!itemSnap.exists()) {
       console.warn('아이템 문서가 존재하지 않음');
@@ -92,13 +92,39 @@ const ItemDetail = () => {
 
     const likedBy = itemSnap.data().likedBy || [];
     const isLiked = likedBy.includes(currentUser.uid);
-
     const updatedLikes = isLiked
       ? likedBy.filter((uid) => uid !== currentUser.uid)
       : [...likedBy, currentUser.uid];
 
+    // 1. items 컬렉션 업데이트
     await updateDoc(itemRef, { likedBy: updatedLikes });
 
+    // 2. favorites 컬렉션도 동기화
+    const favoritesRef = collection(db, 'favorites');
+    const favQuery = query(
+      favoritesRef,
+      where('userId', '==', currentUser.uid),
+      where('itemId', '==', itemId)
+    );
+    const favSnapshot = await getDocs(favQuery);
+
+    if (isLiked) {
+      // 이미 좋아요 → 취소 → favorites 문서 삭제
+      favSnapshot.forEach(async (docSnap) => {
+        await deleteDoc(docSnap.ref);
+      });
+    } else {
+      // 새로 좋아요 → favorites 문서 추가
+      if (favSnapshot.empty) {
+        await addDoc(favoritesRef, {
+          userId: currentUser.uid,
+          itemId: itemId,
+          createdAt: new Date(),
+        });
+      }
+    }
+
+    // 상태 반영
     setLiked(!isLiked);
   } catch (err) {
     console.error('좋아요 처리 실패:', err);

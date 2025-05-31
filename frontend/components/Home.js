@@ -314,6 +314,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
 		bottom: 0,
     height: 83,
-		width: '108%',
+		width: '109%',
   },
 });
