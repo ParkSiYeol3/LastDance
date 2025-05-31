@@ -11,6 +11,7 @@ const StripeCheckoutScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     const initAndPresent = async () => {
+      // 1) PaymentSheet 초기화
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: '이거옷대여',
@@ -23,25 +24,35 @@ const StripeCheckoutScreen = ({ route, navigation }) => {
         return;
       }
 
-      const { error: presentError } = await presentPaymentSheet();
+      // 2) PaymentSheet 표시 및 결제 진행
+      const { error: presentError, paymentIntent } = await presentPaymentSheet();
       if (presentError) {
         Alert.alert('결제 실패', presentError.message);
         navigation.goBack();
-      } else {
+      } else if (paymentIntent) {
+        // 3) 결제 성공
         Alert.alert('결제 성공!', '보증금 결제가 완료되었습니다.');
 
-        // ✅ 결제 성공 후 결제 상태 서버에 알림
         try {
+          // 4) 필요한 정보 불러오기
           const userId = await AsyncStorage.getItem('userId');
-          const rentalItemId = await AsyncStorage.getItem('currentRentalItemId'); // 이 값은 결제 요청 시에 저장해둬야 함
+          // rentalItemId는 ChatRoom에서 결제 요청 전에 AsyncStorage에 미리 저장해 두었다고 가정합니다.
+          // 예: AsyncStorage.setItem('currentRentalItemId', rentalItemId);
+          const rentalItemId = await AsyncStorage.getItem('currentRentalItemId');
+
+          // 5) 결제 상태 업데이트 API 호출 (여기에 paymentIntent.id를 반드시 포함)
           await axios.post(`${API_URL}/api/deposit/confirm-payment`, {
+            paymentIntentId: paymentIntent.id,
             userId,
             rentalItemId,
           });
+
         } catch (err) {
           console.error('결제 상태 업데이트 실패:', err);
+          Alert.alert('오류', '결제 완료 후 상태 업데이트에 실패했습니다.');
         }
 
+        // 6) 결제 완료 후 이전 화면으로 돌아가기
         navigation.goBack();
       }
     };

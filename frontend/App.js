@@ -17,6 +17,7 @@ import Rank from './components/Rank';
 import Footer from './components/Footer';
 import ChatList from './components/ChatList';
 import ChatRoom from './components/ChatRoom';
+import ReportScreen from './components/ReportScreen';
 import AddItemScreen from './components/AddItemScreen';
 import Deposit from './components/Deposit';
 import Notice from './components/Notice';
@@ -31,6 +32,7 @@ import ReviewForm from './components/ReviewForm';
 import ReviewList from './components/ReviewList'; // ← 이 줄 추가
 import RentalRequests from './components/RentalRequests';
 import AdminDashboard from './components/AdminDashboard';
+import AdminReports from './components/AdminReports';
 
 const Stack = createStackNavigator();
 
@@ -51,8 +53,10 @@ export default function App() {
 					<Stack.Screen name='ChatRoom' component={ChatRoom} />
 					<Stack.Screen name='ReviewForm' component={ReviewForm} />
 					<Stack.Screen name='StripeCheckoutScreen' component={StripeCheckoutScreen} />
+					<Stack.Screen name="ReportScreen" component={ReportScreen} />
 					<Stack.Screen name='Write' component={AddItemScreen} />
 					<Stack.Screen name='MyPage' component={MyPage} />
+					<Stack.Screen name='AdminReports' component={AdminReports} />
 					<Stack.Screen name='Footer' component={Footer} />
 					<Stack.Screen name='Settings' component={Settings} />
 					<Stack.Screen name='Deposit' component={Deposit} />

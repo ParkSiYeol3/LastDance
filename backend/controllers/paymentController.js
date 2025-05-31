@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { db } = require('../firebase/admin'); // Firestore 연동
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // 📦 보증금 결제 Intent 생성
 exports.createPaymentIntent = async (req, res) => {
@@ -160,5 +161,58 @@ exports.getPaymentStatus = async (req, res) => {
   } catch (err) {
     console.error('❌ 결제 상태 조회 실패:', err.message);
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.confirmPayment = async (req, res) => {
+  const { paymentIntentId, userId, rentalItemId } = req.body;
+
+  // 1) 필수 파라미터 검증
+  if (!paymentIntentId || !userId || !rentalItemId) {
+    return res.status(400).json({ 
+      error: 'paymentIntentId, userId, rentalItemId는 필수입니다.' 
+    });
+  }
+
+  try {
+    // 2) Stripe API로 실제 결제 상태 조회 (옵션이지만 안전)
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (intent.status !== 'succeeded') {
+      return res.status(400).json({ 
+        error: '해당 결제는 아직 완료되지 않았거나 실패 상태입니다.' 
+      });
+    }
+
+    // 3) Firestore에서 해당 paymentIntentId를 가진 결제 문서 찾기
+    const snapshot = await db.collection('payments')
+      .where('paymentIntentId', '==', paymentIntentId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ 
+        error: '해당 paymentIntentId를 가진 결제 내역을 찾을 수 없습니다.' 
+      });
+    }
+
+    // 4) 문서가 이미 succeeded 되어 있지 않다면 업데이트
+    const paymentDocRef = snapshot.docs[0].ref;
+    const paymentData = snapshot.docs[0].data();
+
+    if (paymentData.status === 'succeeded') {
+      // 이미 업데이트된 경우라면 그대로 성공 응답
+      return res.json({ success: true, message: '이미 succeeded 상태입니다.' });
+    }
+
+    // 5) Firestore 문서 업데이트
+    await paymentDocRef.update({ status: 'succeeded', succeededAt: new Date() });
+
+    // (선택) 일부러 chatRooms 컬렉션에도 상태를 기록해야 한다면 여기에 추가 로직을 넣으세요
+     await db.collection('chatRooms').doc(roomId).update({ paymentStatus: 'succeeded' });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('결제 완료 처리 오류:', err);
+    return res.status(500).json({ error: '결제 완료 처리 중 서버 오류가 발생했습니다.' });
   }
 };
