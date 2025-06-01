@@ -1,19 +1,45 @@
-// screens/AddItemScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Image, Alert, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, Button, Image, Alert, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebase-config'; // Firebase 설정에서 export 되어야 함
+import { auth, db } from '../firebase-config';
 
 const AddItemScreen = ({ navigation }) => {
 	const [name, setName] = useState('');
 	const [description, setDescription] = useState('');
-	const [imageURL, setImageURL] = useState('');
+	const [imageInput, setImageInput] = useState('');
+	const [imageURLs, setImageURLs] = useState([]); // ✅ 여러 장 저장용
 	const [uploading, setUploading] = useState(false);
 
+	const handleTakePhoto = async () => {
+		const { status } = await ImagePicker.requestCameraPermissionsAsync();
+		if (status !== 'granted') {
+			Alert.alert('권한 필요', '카메라 접근 권한이 필요합니다.');
+			return;
+		}
+
+		const result = await ImagePicker.launchCameraAsync({
+			mediaTypes: ImagePicker.MediaTypeOptions.Images,
+			quality: 0.7,
+			base64: false,
+		});
+
+		if (!result.canceled && result.assets.length > 0) {
+			setImageURLs((prev) => [...prev, result.assets[0].uri]);
+		}
+	};
+
+	const handleAddImageURL = () => {
+		if (imageInput.trim()) {
+			setImageURLs((prev) => [...prev, imageInput.trim()]);
+			setImageInput('');
+		}
+	};
+
 	const handleSubmit = async () => {
-		if (!name || !description) {
-			Alert.alert('오류', '상품명과 설명을 입력해주세요.');
+		if (!name || !description || imageURLs.length === 0) {
+			Alert.alert('오류', '상품명, 설명, 이미지 최소 1장은 필수입니다.');
 			return;
 		}
 
@@ -32,7 +58,7 @@ const AddItemScreen = ({ navigation }) => {
 				userId: user.uid,
 				name,
 				description,
-				imageURL,
+				imageURLs, // ✅ 여러 이미지 저장
 				latitude: location.coords.latitude,
 				longitude: location.coords.longitude,
 				timestamp: serverTimestamp(),
@@ -51,10 +77,30 @@ const AddItemScreen = ({ navigation }) => {
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
 			<Text style={styles.title}>상품 등록</Text>
+
 			<TextInput placeholder='상품명' style={styles.input} value={name} onChangeText={setName} />
 			<TextInput placeholder='설명' style={[styles.input, styles.textarea]} multiline value={description} onChangeText={setDescription} />
-			<TextInput placeholder='이미지 주소(URL)' style={styles.input} value={imageURL} onChangeText={setImageURL} />
-			{imageURL ? <Image source={{ uri: imageURL }} style={styles.image} /> : null}
+
+			{/* 이미지 URL 수동 추가 */}
+			<View style={{ flexDirection: 'row', width: '100%', marginBottom: 10 }}>
+				<TextInput placeholder='이미지 주소(URL)' style={[styles.input, { flex: 1 }]} value={imageInput} onChangeText={setImageInput} />
+				<TouchableOpacity style={styles.addBtn} onPress={handleAddImageURL}>
+					<Text style={{ color: '#fff' }}>+ 추가</Text>
+				</TouchableOpacity>
+			</View>
+
+			{/* 카메라 촬영 */}
+			<TouchableOpacity style={styles.cameraBtn} onPress={handleTakePhoto}>
+				<Text style={{ color: '#fff', textAlign: 'center' }}>📷 카메라로 촬영하기</Text>
+			</TouchableOpacity>
+
+			{/* 이미지 미리보기 */}
+			<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+				{imageURLs.map((url, index) => (
+					<Image key={index} source={{ uri: url }} style={styles.image} />
+				))}
+			</ScrollView>
+
 			<Button title={uploading ? '등록 중...' : '등록하기'} onPress={handleSubmit} disabled={uploading} />
 		</ScrollView>
 	);
@@ -74,7 +120,6 @@ const styles = StyleSheet.create({
 		fontWeight: 'bold',
 	},
 	input: {
-		width: '100%',
 		borderColor: '#ccc',
 		borderWidth: 1,
 		borderRadius: 5,
@@ -84,12 +129,26 @@ const styles = StyleSheet.create({
 	textarea: {
 		height: 100,
 		textAlignVertical: 'top',
+		width: '100%',
+	},
+	cameraBtn: {
+		backgroundColor: '#31C585',
+		padding: 12,
+		borderRadius: 6,
+		marginBottom: 10,
+		width: '100%',
+	},
+	addBtn: {
+		backgroundColor: '#555',
+		justifyContent: 'center',
+		paddingHorizontal: 12,
+		borderRadius: 5,
+		marginLeft: 5,
 	},
 	image: {
-		width: 200,
-		height: 200,
-		marginTop: 10,
-		marginBottom: 15,
-		borderRadius: 10,
+		width: 120,
+		height: 120,
+		borderRadius: 8,
+		marginRight: 10,
 	},
 });
