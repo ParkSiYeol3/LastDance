@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, Alert, TouchableOpacity, Dimensions } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, query, where, getDoc, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL, db } from '../firebase-config';
@@ -25,6 +25,11 @@ const ItemDetail = () => {
 	const [liked, setLiked] = useState(false);
 
 	useEffect(() => {
+		if (!itemId) {
+			Alert.alert('오류', '아이템 정보가 잘못되었습니다.');
+			navigation.goBack();
+			return;
+		}
 		loadUserAndItem();
 	}, []);
 
@@ -45,13 +50,11 @@ const ItemDetail = () => {
 	const fetchItem = async () => {
 		try {
 			const res = await axios.get(`${API_URL}/api/items/${itemId}`);
-			setItem(res.data?.item ?? null);
+			const fetched = res.data?.item ?? null;
+			setItem(fetched);
 			setItemOwnerName(res.data?.itemOwnerName ?? '');
-			if (res.data?.item?.userId) {
-				await fetchOwnerProfile(res.data.item.userId);
-			}
+			if (fetched?.userId) await fetchOwnerProfile(fetched.userId);
 		} catch (err) {
-			console.error('아이템 불러오기 실패:', err);
 			Alert.alert('오류', '아이템 정보를 불러올 수 없습니다.');
 		}
 	};
@@ -83,17 +86,29 @@ const ItemDetail = () => {
 			const itemRef = doc(db, 'items', itemId);
 			const itemSnap = await getDoc(itemRef);
 
-			if (!itemSnap.exists()) {
-				console.warn('아이템 문서가 존재하지 않음');
-				return;
-			}
+			if (!itemSnap.exists()) return;
 
 			const likedBy = itemSnap.data().likedBy || [];
 			const isLiked = likedBy.includes(currentUser.uid);
-
 			const updatedLikes = isLiked ? likedBy.filter((uid) => uid !== currentUser.uid) : [...likedBy, currentUser.uid];
 
 			await updateDoc(itemRef, { likedBy: updatedLikes });
+
+			const favoritesRef = collection(db, 'favorites');
+			const favQuery = query(favoritesRef, where('userId', '==', currentUser.uid), where('itemId', '==', itemId));
+			const favSnapshot = await getDocs(favQuery);
+
+			if (isLiked) {
+				favSnapshot.forEach(async (docSnap) => {
+					await deleteDoc(docSnap.ref);
+				});
+			} else if (favSnapshot.empty) {
+				await addDoc(favoritesRef, {
+					userId: currentUser.uid,
+					itemId,
+					createdAt: new Date(),
+				});
+			}
 
 			setLiked(!isLiked);
 		} catch (err) {
@@ -170,14 +185,15 @@ const ItemDetail = () => {
 		<ScrollView contentContainerStyle={styles.container} nestedScrollEnabled={true}>
 			<View style={styles.imageBox}>
 				{Array.isArray(item.imageURLs) && item.imageURLs.length > 0 ? (
-					<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+					<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageSlider}>
 						{item.imageURLs.map((url, index) => (
 							<Image key={index} source={{ uri: url }} style={styles.image} />
 						))}
 					</ScrollView>
-				) : item.imageURL ? (
-					<Image source={{ uri: item.imageURL }} style={styles.image} />
-				) : null}
+				) : (
+					item.imageURL && <Image source={{ uri: item.imageURL }} style={styles.image} />
+				)}
+
 				<View style={styles.iconContainer}>
 					<TouchableOpacity onPress={toggleLike}>
 						<Text style={[styles.icon, liked && styles.liked]}>❤️</Text>
@@ -189,7 +205,7 @@ const ItemDetail = () => {
 				<Text style={styles.title}>{item.name}</Text>
 				<Text style={styles.description}>{item.description}</Text>
 
-				{item?.userId && (
+				{item.userId && (
 					<View style={styles.sellerRow}>
 						<Text style={styles.ownerText}>판매자: {itemOwnerName}</Text>
 						<TouchableOpacity
@@ -254,66 +270,29 @@ const ItemDetail = () => {
 
 export default ItemDetail;
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
-	container: {
-		padding: 16,
-		backgroundColor: '#fff',
-		gap: 20,
-	},
-	center: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	imageBox: {
-		position: 'relative',
-		alignItems: 'flex-start',
-		marginBottom: 10,
+	container: { padding: 16, backgroundColor: '#fff', gap: 20 },
+	center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+	imageBox: { position: 'relative', alignItems: 'center', marginBottom: 10 },
+	imageSlider: {
+		width: '100%',
+		height: 320,
+		borderRadius: 12,
 	},
 	image: {
-		width: 240,
-		height: 240,
-		borderRadius: 12,
-		marginRight: 12,
+		width,
+		height: 320,
 		resizeMode: 'cover',
 	},
-	iconContainer: {
-		position: 'absolute',
-		top: 16,
-		right: 16,
-		flexDirection: 'row',
-		gap: 12,
-	},
-	icon: {
-		fontSize: 24,
-		opacity: 0.4,
-	},
-	liked: {
-		opacity: 1,
-		color: '#4CAF50',
-	},
-	card: {
-		backgroundColor: '#fff',
-		borderRadius: 12,
-		padding: 16,
-		elevation: 2,
-		gap: 10,
-	},
-	title: {
-		fontSize: 22,
-		fontWeight: 'bold',
-		color: '#222',
-	},
-	description: {
-		fontSize: 16,
-		color: '#444',
-		lineHeight: 22,
-	},
-	ownerText: {
-		fontSize: 14,
-		color: '#888',
-		fontStyle: 'italic',
-	},
+	iconContainer: { position: 'absolute', top: 16, right: 16, flexDirection: 'row', gap: 12 },
+	icon: { fontSize: 24, opacity: 0.4 },
+	liked: { opacity: 1, color: '#4CAF50' },
+	card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, elevation: 2, gap: 10 },
+	title: { fontSize: 22, fontWeight: 'bold', color: '#222' },
+	description: { fontSize: 16, color: '#444', lineHeight: 22 },
+	ownerText: { fontSize: 14, color: '#888', fontStyle: 'italic' },
 	ownerNoticeBox: {
 		marginTop: 6,
 		paddingVertical: 10,
@@ -321,33 +300,12 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 		alignItems: 'center',
 	},
-	ownerNoticeText: {
-		color: '#555',
-		fontSize: 14,
-	},
-	sellerRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
-	},
-	reviewButton: {
-		backgroundColor: '#007AFF',
-		paddingVertical: 6,
-		paddingHorizontal: 10,
-		borderRadius: 6,
-	},
-	reviewButtonText: {
-		color: '#fff',
-		fontSize: 13,
-		fontWeight: 'bold',
-	},
-	ownerButtonGroup: {
-		gap: 10,
-		marginBottom: 20,
-	},
-	buttonGroup: {
-		width: '100%',
-	},
+	ownerNoticeText: { color: '#555', fontSize: 14 },
+	sellerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+	reviewButton: { backgroundColor: '#007AFF', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6 },
+	reviewButtonText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
+	ownerButtonGroup: { gap: 10, marginBottom: 20 },
+	buttonGroup: { width: '100%' },
 	buttonPrimary: {
 		backgroundColor: '#4CAF50',
 		paddingVertical: 14,

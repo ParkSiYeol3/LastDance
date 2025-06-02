@@ -1,40 +1,72 @@
-// components/Favorites.js
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db } from '../firebase-config';
 import Footer from './Footer';
 
-const favoriteItems = [
-  {
-    id: '1',
-    title: '갤럭시 버즈2 프로',
-    location: '서울 마포구',
-    price: '150,000원',
-  },
-  {
-    id: '2',
-    title: '닌텐도 스위치 OLED',
-    location: '서울 영등포구',
-    price: '350,000원',
-  },
-];
-
 const Favorites = ({ navigation }) => {
+  const [favoriteItems, setFavoriteItems] = useState([]);
+
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      try {
+        const userJson = await AsyncStorage.getItem('currentUser');
+        if (!userJson) return;
+        const user = JSON.parse(userJson);
+
+        // 1. 사용자의 favorites 목록 가져오기
+        const favRef = collection(db, 'favorites');
+        const favQuery = query(favRef, where('userId', '==', user.uid));
+        const favSnapshot = await getDocs(favQuery);
+
+        const itemPromises = favSnapshot.docs.map(async (docSnap) => {
+          const itemId = docSnap.data().itemId;
+          const itemRef = doc(db, 'items', itemId);
+          const itemSnap = await getDoc(itemRef);
+          return { id: itemId, ...itemSnap.data() };
+        });
+
+        const items = await Promise.all(itemPromises);
+        setFavoriteItems(items.filter(Boolean)); // null 필터링
+      } catch (err) {
+        console.error('좋아요 목록 불러오기 실패:', err);
+      }
+    };
+
+    fetchFavorites();
+  }, []);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>관심목록</Text>
+      <Text style={styles.header}>회원님이 주목하고 있는 상품</Text>
 
       <ScrollView style={styles.scrollView}>
-        {favoriteItems.map(item => (
-          <View key={item.id} style={styles.itemContainer}>
-            {/* <Image style={styles.itemImage} source={require('../assets/sample.png')} /> */}
-            <View style={styles.itemDetails}>
-              <Text style={styles.itemTitle}>{item.title}</Text>
-              <Text style={styles.itemLocation}>{item.location}</Text>
-              <Text style={styles.itemPrice}>{item.price}</Text>
-            </View>
-            <Text style={styles.heartIcon}>❤️</Text>
-          </View>
-        ))}
+        {favoriteItems.length === 0 ? (
+          <Text style={styles.emptyText}>좋아요한 게시글이 없습니다.</Text>
+        ) : (
+          favoriteItems.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.itemContainer}
+              onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
+            >
+              <Image
+                style={styles.itemImage}
+                source={
+                  item.imageURL
+                    ? { uri: item.imageURL }
+                    : require('../assets/top.png') // 기본 이미지
+                }
+              />
+              <View style={styles.itemDetails}>
+                <Text style={styles.itemTitle} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.itemPrice}>{item.price ? `${item.price}원` : '가격 미정'}</Text>
+              </View>
+              <Text style={styles.heartIcon}>❤️</Text>
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -74,6 +106,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     marginRight: 15,
+    backgroundColor: '#eee',
   },
   itemDetails: {
     flex: 1,
@@ -82,21 +115,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  itemLocation: {
-    color: '#666',
-    marginVertical: 4,
-  },
   itemPrice: {
     fontSize: 15,
     fontWeight: 'bold',
+    marginTop: 4,
   },
   heartIcon: {
     fontSize: 20,
     color: '#FF4500',
+    marginLeft: 8,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    color: '#999',
   },
   footer: {
     position: 'absolute',
-    bottom: 0,
-    width: '100%',
+		bottom: 0,
+		height:86,
+		width: '109%',
   },
 });
