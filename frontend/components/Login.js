@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, StatusBar, Alert } from 'react-native';
-import Footer from '../components/Footer';
 import { auth } from '../firebase-config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -60,10 +59,6 @@ export default function App() {
 				<TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Register')}>
 					<Text style={styles.buttonText}>회원가입</Text>
 				</TouchableOpacity>
-			</View>
-
-			<View style={styles.container2}>
-				<Footer navigation={navigation} />
 			</View>
 		</View>
 	);

@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  StatusBar,
-  Image,
-  ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image, ScrollView, } from 'react-native';
 import Footer from '../components/Footer';
 import gearIcon from '../assets/gear.png';
 import { db } from '../firebase-config';
@@ -55,6 +47,7 @@ const MyPage = ({ navigation }) => {
   return (
     <View style={styles.screen}>
       <StatusBar barStyle="dark-content" />
+
       {/* 프로필 박스 */}
       <View style={styles.profileBox}>
         <Image
@@ -79,13 +72,12 @@ const MyPage = ({ navigation }) => {
         <View style={styles.menuBox}>
           <MenuItem label="🧾 보증금 결제 내역" onPress={() => navigation.navigate('SalesHistory')} />
           <MenuItem label="♥️ 좋아요" onPress={() => navigation.navigate('Favorites')} />
-          <MenuItem label="💳 보증금 수단" onPress={() => navigation.navigate('Deposit')} />
-          <MenuItem label="👤 등급별 혜택 안내" onPress={() => navigation.navigate('Rank')} />
+          <MenuItem label="🕒 최근 본 상품" onPress={() => navigation.navigate('RecentViews')} />
           <MenuItem label="📢 공지사항" onPress={() => navigation.navigate('Notice')} />
           <MenuItem label="📩 승인 요청 내역" onPress={() => navigation.navigate('RentalRequests')} />
         </View>
 
-        {/* 관리자 전용: 관리자인 경우에만 버튼들 노출 */}
+        {/* 관리자 전용 */}
         {userData.role === 'admin' && (
           <>
             <TouchableOpacity
@@ -133,7 +125,7 @@ const styles = StyleSheet.create({
   footer: {
     position: 'absolute',
     bottom: 0,
-    height: 90,
+    height: 85,
     width: '100%',
   },
   profileBox: {
