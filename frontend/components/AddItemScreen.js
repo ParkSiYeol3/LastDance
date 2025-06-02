@@ -9,8 +9,16 @@ const AddItemScreen = ({ navigation }) => {
 	const [name, setName] = useState('');
 	const [description, setDescription] = useState('');
 	const [imageInput, setImageInput] = useState('');
-	const [imageURLs, setImageURLs] = useState([]); // ✅ 여러 장 저장용
+	const [imageURLs, setImageURLs] = useState([]);
 	const [uploading, setUploading] = useState(false);
+	const [category, setCategory] = useState('');
+
+	const categoryStyles = {
+		상의: { icon: '👕', color: '#31C585' },
+		하의: { icon: '👖', color: '#4A90E2' },
+		신발: { icon: '👟', color: '#FFA500' },
+		가방: { icon: '👜', color: '#9B59B6' },
+	};
 
 	const handleTakePhoto = async () => {
 		const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -38,8 +46,8 @@ const AddItemScreen = ({ navigation }) => {
 	};
 
 	const handleSubmit = async () => {
-		if (!name || !description || imageURLs.length === 0) {
-			Alert.alert('오류', '상품명, 설명, 이미지 최소 1장은 필수입니다.');
+		if (!name || !description || !category || imageURLs.length === 0) {
+			Alert.alert('오류', '상품명, 설명, 카테고리, 이미지 최소 1장은 필수입니다.');
 			return;
 		}
 
@@ -58,7 +66,8 @@ const AddItemScreen = ({ navigation }) => {
 				userId: user.uid,
 				name,
 				description,
-				imageURLs, // ✅ 여러 이미지 저장
+				category,
+				imageURLs,
 				latitude: location.coords.latitude,
 				longitude: location.coords.longitude,
 				timestamp: serverTimestamp(),
@@ -81,7 +90,21 @@ const AddItemScreen = ({ navigation }) => {
 			<TextInput placeholder='상품명' style={styles.input} value={name} onChangeText={setName} />
 			<TextInput placeholder='설명' style={[styles.input, styles.textarea]} multiline value={description} onChangeText={setDescription} />
 
-			{/* 이미지 URL 수동 추가 */}
+			<View style={styles.categoryContainer}>
+				{Object.keys(categoryStyles).map((cat) => {
+					const isSelected = category === cat;
+					const { icon, color } = categoryStyles[cat];
+
+					return (
+						<TouchableOpacity key={cat} style={[styles.categoryBtn, isSelected && { backgroundColor: color, borderColor: color }]} onPress={() => setCategory(cat)}>
+							<Text style={[styles.categoryText, isSelected && { color: '#fff', fontWeight: 'bold' }]}>
+								{icon} {cat}
+							</Text>
+						</TouchableOpacity>
+					);
+				})}
+			</View>
+
 			<View style={{ flexDirection: 'row', width: '100%', marginBottom: 10 }}>
 				<TextInput placeholder='이미지 주소(URL)' style={[styles.input, { flex: 1 }]} value={imageInput} onChangeText={setImageInput} />
 				<TouchableOpacity style={styles.addBtn} onPress={handleAddImageURL}>
@@ -89,12 +112,10 @@ const AddItemScreen = ({ navigation }) => {
 				</TouchableOpacity>
 			</View>
 
-			{/* 카메라 촬영 */}
 			<TouchableOpacity style={styles.cameraBtn} onPress={handleTakePhoto}>
 				<Text style={{ color: '#fff', textAlign: 'center' }}>📷 카메라로 촬영하기</Text>
 			</TouchableOpacity>
 
-			{/* 이미지 미리보기 */}
 			<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 				{imageURLs.map((url, index) => (
 					<Image key={index} source={{ uri: url }} style={styles.image} />
@@ -150,5 +171,25 @@ const styles = StyleSheet.create({
 		height: 120,
 		borderRadius: 8,
 		marginRight: 10,
+	},
+	categoryContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		width: '100%',
+		marginBottom: 15,
+		flexWrap: 'wrap',
+	},
+	categoryBtn: {
+		borderWidth: 1,
+		borderColor: '#ccc',
+		borderRadius: 6,
+		paddingVertical: 10,
+		paddingHorizontal: 16,
+		marginRight: 8,
+		marginBottom: 8,
+	},
+	categoryText: {
+		color: '#333',
+		fontSize: 14,
 	},
 });
