@@ -1,15 +1,14 @@
 // controllers/chatController.js
+require('dotenv').config(); // ⬅️ .env 파일 불러오기
 const { admin, db } = require('../firebase/admin');
 const { v4: uuidv4 } = require('uuid');
 const { doc, getDoc, addDoc, collection, serverTimestamp, query, where, onSnapshot, deleteDoc, updateDoc, orderBy, getDocs } = require('firebase-admin/firestore');
+const axios = require('axios');
+const API_URL = process.env.API_URL || 'http://192.168.0.24:3000';
 
-/**
- * 채팅방 생성
- */
-// controllers/chatController.js
+//채팅방 생성
 exports.startChat = async (req, res) => {
 	const { userId1, userId2, rentalItemId } = req.body;
-
 	if (!userId1 || !userId2 || !rentalItemId) {
 		return res.status(400).json({ error: 'userId1, userId2, rentalItemId 모두 필요합니다.' });
 	}
@@ -27,18 +26,12 @@ exports.startChat = async (req, res) => {
 
 		if (!snapshot.empty) {
 			const chatRoom = snapshot.docs[0];
-
-			// ✅ buyerId 없으면 보완 저장
 			if (!chatRoom.data().buyerId) {
-				await chatRoom.ref.update({
-					buyerId: userId1, // 항상 userId1을 구매자로 저장
-				});
+				await chatRoom.ref.update({ buyerId: userId1 });
 			}
-
 			return res.json({ chatRoomId: chatRoom.id, message: '기존 채팅방 있음' });
 		}
 
-		// ✅ 새 채팅방 생성 (buyerId 포함)
 		const newRef = await db.collection('chatRooms').add({
 			rentalItemId,
 			participants: [userId1, userId2],
@@ -54,6 +47,21 @@ exports.startChat = async (req, res) => {
 		res.status(500).json({ error: err.message });
 	}
 };
+
+// 미들웨어 예시
+const authenticate = async (req, res, next) => {
+	const token = req.headers.authorization?.split(' ')[1];
+	if (!token) return res.status(401).json({ error: '토큰 누락' });
+
+	try {
+		const decoded = await admin.auth().verifyIdToken(token);
+		req.user = decoded;
+		next();
+	} catch (err) {
+		return res.status(401).json({ error: '유효하지 않은 토큰' });
+	}
+};
+
 /**
  * 나의 채팅방 목록 조회
  */
@@ -84,7 +92,6 @@ exports.getUserChatRooms = async (req, res) => {
 exports.sendMessage = async (req, res) => {
 	const { text, senderId, type = 'text', amount = null } = req.body;
 	const { roomId } = req.params;
-
 	if (!text || !senderId || !roomId) {
 		return res.status(400).json({ error: 'text, senderId, roomId 모두 필요합니다.' });
 	}
@@ -94,27 +101,39 @@ exports.sendMessage = async (req, res) => {
 			senderId,
 			text,
 			type,
-			sentAt: admin.firestore.FieldValue.serverTimestamp(), // ✅ 수정됨
-			createdAt: admin.firestore.FieldValue.serverTimestamp(), // ✅ 쿼리 정렬용
+			sentAt: admin.firestore.FieldValue.serverTimestamp(),
+			createdAt: admin.firestore.FieldValue.serverTimestamp(),
 			isRead: false,
 		};
-
 		if (amount !== null) {
-			messageData.amount = amount; // 🔥 보증금 금액 포함
+			messageData.amount = amount;
 		}
 
-		// messages 서브컬렉션에 추가
 		await db.collection('chatRooms').doc(roomId).collection('messages').add(messageData);
-
-		// 마지막 메시지 업데이트
 		await db.collection('chatRooms').doc(roomId).set({ lastMessage: text }, { merge: true });
 
-		res.json({ message: '메시지 저장 성공' });
+		// 🔔 알림 전송
+		const roomDoc = await db.collection('chatRooms').doc(roomId).get();
+		const roomData = roomDoc.data();
+		const receiverId = roomData.participants.find((uid) => uid !== senderId);
+		const userDoc = await db.collection('users').doc(receiverId).get();
+		const pushToken = userDoc.data().pushToken;
+
+		if (pushToken) {
+			await axios.post(`${API_URL}/api/notifications/send`, {
+				userId: receiverId,
+				title: '📬 새로운 메시지',
+				message: text,
+			});
+		}
+
+		res.json({ message: '메시지 저장 및 알림 전송 완료' });
 	} catch (err) {
 		console.error('❌ 메시지 저장 오류:', err);
 		res.status(500).json({ error: '메시지 저장 실패' });
 	}
 };
+
 /**
  * 채팅 메시지 조회
  */

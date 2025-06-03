@@ -1,13 +1,22 @@
-// App.js (최종 정리된 전체 구조)
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StripeProvider } from '@stripe/stripe-react-native';
-// Firebase
-import { db } from './firebase-config';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { registerPushToken } from './utils/registerPushToken';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import * as Notifications from 'expo-notifications';
 
-// Screens
+// 알림 핸들러 설정
+Notifications.setNotificationHandler({
+	handleNotification: async () => ({
+		shouldShowAlert: true,
+		shouldPlaySound: false,
+		shouldSetBadge: false,
+	}),
+});
+
+// 기존 import 유지
+import { db } from './firebase-config';
 import Login from './components/Login';
 import Register from './components/Register';
 import FindAccount from './components/FindAccount';
@@ -26,22 +35,49 @@ import Favorites from './components/Favorites';
 import MapScreen from './components/Map';
 import SplashScreen from './components/SplashScreen';
 import ItemDetail from './components/ItemDetail';
-import Home from './components/Home'; // ⭐ 새로 분리한 Home 컴포넌트
+import Home from './components/Home';
 import StripeCheckoutScreen from './components/StripeCheckoutScreen';
 import ReviewForm from './components/ReviewForm';
-import ReviewList from './components/ReviewList'; // ← 이 줄 추가
+import ReviewList from './components/ReviewList';
 import RentalRequests from './components/RentalRequests';
 import AdminDashboard from './components/AdminDashboard';
 import AdminReports from './components/AdminReports';
+import StainDetector from './components/StainDetector';
 
 const Stack = createStackNavigator();
 
 export default function App() {
+	const notificationListener = useRef();
+	const responseListener = useRef();
+
+	useEffect(() => {
+		const auth = getAuth();
+
+		const unsubscribe = onAuthStateChanged(auth, (user) => {
+			if (user) {
+				registerPushToken();
+			}
+		});
+
+		// 📥 알림 수신
+		notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
+			console.log('📨 알림 수신됨:', notification);
+		});
+
+		// 👆 알림 클릭
+		responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+			console.log('👆 알림 클릭됨:', response);
+		});
+
+		return () => {
+			unsubscribe();
+			Notifications.removeNotificationSubscription(notificationListener.current);
+			Notifications.removeNotificationSubscription(responseListener.current);
+		};
+	}, []);
+
 	return (
-		<StripeProvider
-			publishableKey='pk_test_51RAVRA2MK3G0aVNyAbEK2BYKKnzwmHOsmkvAwTfD0vIP6CkDzb9TD4NdWJR0nTAvep5ig4Or2ZAR1wgUC804qS7U00YrHdeIWy' // 🔑 본인 키 입력
-			urlScheme='tryclothes'
-		>
+		<StripeProvider publishableKey='pk_test_...' urlScheme='tryclothes'>
 			<NavigationContainer>
 				<Stack.Navigator initialRouteName='Splash'>
 					<Stack.Screen name='Splash' component={SplashScreen} />
@@ -53,7 +89,7 @@ export default function App() {
 					<Stack.Screen name='ChatRoom' component={ChatRoom} />
 					<Stack.Screen name='ReviewForm' component={ReviewForm} />
 					<Stack.Screen name='StripeCheckoutScreen' component={StripeCheckoutScreen} />
-					<Stack.Screen name="ReportScreen" component={ReportScreen} />
+					<Stack.Screen name='ReportScreen' component={ReportScreen} />
 					<Stack.Screen name='Write' component={AddItemScreen} />
 					<Stack.Screen name='MyPage' component={MyPage} />
 					<Stack.Screen name='AdminReports' component={AdminReports} />
@@ -66,9 +102,10 @@ export default function App() {
 					<Stack.Screen name='Rank' component={Rank} />
 					<Stack.Screen name='Map' component={MapScreen} />
 					<Stack.Screen name='ItemDetail' component={ItemDetail} />
-					<Stack.Screen name="ReviewList" component={ReviewList} options={{ title: '거래 후기' }} /> 
+					<Stack.Screen name='ReviewList' component={ReviewList} options={{ title: '거래 후기' }} />
 					<Stack.Screen name='RentalRequests' component={RentalRequests} />
-					<Stack.Screen name="AdminDashboard" component={AdminDashboard} options={{ title: '감정 통계' }} />
+					<Stack.Screen name='AdminDashboard' component={AdminDashboard} options={{ title: '감정 통계' }} />
+					<Stack.Screen name='StainDetector' component={StainDetector} />
 				</Stack.Navigator>
 			</NavigationContainer>
 		</StripeProvider>

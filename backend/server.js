@@ -12,6 +12,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
+// 알림
+const notificationRoutes = require('./routes/notificationRoutes'); // ✅ 추가
 
 // 🌐 CORS & JSON 파싱
 app.use(cors());
@@ -28,6 +30,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/notifications', notificationRoutes); // ✅ 추가
 
 // 🔎 테스트용 기본 라우트
 app.get('/api/hello', (req, res) => {
