@@ -36,17 +36,41 @@ const ItemDetail = () => {
 	const loadUserAndItem = async () => {
 		try {
 			const userJson = await AsyncStorage.getItem('currentUser');
-			if (!userJson) return;
+			if (!userJson) {
+				console.log('❌ currentUser 없음');
+				return;
+			}
 			const user = JSON.parse(userJson);
+			if (!user?.uid) {
+				console.log('❌ user.uid 없음');
+				return;
+			}
 			setCurrentUser(user);
+			console.log('✅ user 로드 완료:', user.uid);
 
 			await fetchItem();
-			if (user?.uid) {
-				await fetchItemStatus(user.uid);
-				await logRecentView(user.uid); // ✅ 중복 제거하고 최근 본 상품 기록
-			}
+			await fetchItemStatus(user.uid);
+			await logRecentView(user.uid);
+			await checkExistingRequest(user.uid); // 🔁 여기에 로그 추가됨
 		} catch (error) {
 			console.error('유저 정보 로딩 오류:', error);
+		}
+	};
+
+	const checkExistingRequest = async (userId) => {
+		try {
+			const rentalRef = collection(db, 'rentalRequests');
+			const q = query(rentalRef, where('itemId', '==', itemId), where('requesterId', '==', userId), where('status', '==', 'pending'));
+			const snapshot = await getDocs(q);
+
+			if (!snapshot.empty) {
+				console.log('✅ 이미 대여 요청한 상태');
+				setRentalRequested(true);
+			} else {
+				setRentalRequested(false); // 이게 누락되어 있으면 계속 true로 남아 있음
+			}
+		} catch (err) {
+			console.error('요청 상태 확인 실패:', err);
 		}
 	};
 
@@ -158,7 +182,24 @@ const ItemDetail = () => {
 	};
 
 	const handleRentalRequest = async () => {
+		if (rentalRequested) {
+			console.warn('이미 요청된 상태입니다.');
+			return;
+		}
+
 		const token = await AsyncStorage.getItem('accessToken');
+
+		// Firestore에 중복 확인
+		const rentalRef = collection(db, 'rentalRequests');
+		const q = query(rentalRef, where('itemId', '==', itemId), where('requesterId', '==', currentUser.uid), where('status', '==', 'pending'));
+		const snapshot = await getDocs(q);
+		if (!snapshot.empty) {
+			console.log('❌ 중복 요청 방지: 이미 pending 상태 요청 있음');
+			setRentalRequested(true);
+			return;
+		}
+
+		// 1. 대여 요청 등록 (백엔드 or Firestore)
 		await axios.post(
 			`${API_URL}/api/items/${itemId}/rentals`,
 			{
@@ -169,6 +210,14 @@ const ItemDetail = () => {
 				headers: { Authorization: `Bearer ${token}` },
 			}
 		);
+
+		// 2. 푸시 알림
+		await axios.post(`${API_URL}/api/notifications/send`, {
+			userId: item.userId,
+			title: '📦 대여 요청이 도착했어요!',
+			message: `${currentUser?.nickname || '누군가'}님이 상품을 대여하고 싶어해요.`,
+		});
+
 		setRentalRequested(true);
 	};
 

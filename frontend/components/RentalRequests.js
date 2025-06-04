@@ -52,9 +52,24 @@ const RentalRequests = () => {
 				return;
 			}
 
-			// ✅ 최신 토큰 강제 발급
 			const token = await user.getIdToken(true);
 
+			// 📢 알림 전송 (수락 or 거절 공통)
+			if (status === 'accepted') {
+				await axios.post(`${API_URL}/api/notifications/send`, {
+					userId: requesterId,
+					title: '📦 대여 요청이 수락되었습니다!',
+					message: '요청이 수락되었어요. 채팅을 통해 거래를 진행해보세요.',
+				});
+			} else if (status === 'rejected') {
+				await axios.post(`${API_URL}/api/notifications/send`, {
+					userId: requesterId,
+					title: '❌ 대여 요청이 거절되었습니다',
+					message: '안타깝게도 요청이 거절되었어요. 다른 상품도 살펴보세요!',
+				});
+			}
+
+			// ✅ 채팅 시작 및 안내 메시지 (수락 시에만)
 			if (status === 'accepted') {
 				const res = await axios.post(
 					`${API_URL}/api/chat/start`,
@@ -70,7 +85,6 @@ const RentalRequests = () => {
 
 				const { chatRoomId } = res.data;
 
-				// ✅ 자동 메시지 백엔드로 전송
 				await axios.post(`${API_URL}/api/chat/${chatRoomId}/auto-message`, {
 					text: '대여 요청을 수락했습니다. 편하게 대화 나눠보세요!',
 					senderId: ownerId,
@@ -80,7 +94,7 @@ const RentalRequests = () => {
 				navigation.navigate('ChatRoom', { roomId: chatRoomId });
 			} else {
 				Alert.alert('완료', `요청이 '${status}'로 처리되었습니다.`);
-				fetchRequests();
+				fetchRequests(); // 요청 목록 다시 불러오기
 			}
 		} catch (err) {
 			console.error('상태 업데이트 또는 채팅 시작 실패:', err);
