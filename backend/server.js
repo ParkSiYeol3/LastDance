@@ -14,6 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 // 알림
 const notificationRoutes = require('./routes/notificationRoutes'); // ✅ 추가
+const cloudinaryRoutes = require('./routes/cloudinaryRoutes'); // ✅ 추가
 
 // 🌐 CORS & JSON 파싱
 app.use(cors());
@@ -31,6 +32,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes); // ✅ 추가
+app.use('/api/cloudinary', cloudinaryRoutes); // ✅ 실제 라우팅 연결
 
 // 🔎 테스트용 기본 라우트
 app.get('/api/hello', (req, res) => {
