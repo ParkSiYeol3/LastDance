@@ -5,7 +5,7 @@ import * as Progress from 'react-native-progress';
 import Footer from '../components/Footer';
 
 
-const API_URL = 'http://10.20.76.91:3000';
+const API_URL = 'http://192.168.0.27:3000';
 
 
 export default function AdminDashboard() {
