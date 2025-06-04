@@ -1,5 +1,5 @@
 const { admin, db } = require('../firebase/admin');
-const fetch = require('node-fetch'); // Node.js 18 미만이라면 필수
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 exports.sendNotification = async (req, res) => {
 	const { userId, title, message } = req.body;

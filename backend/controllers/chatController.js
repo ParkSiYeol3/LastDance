@@ -96,7 +96,9 @@ exports.sendMessage = async (req, res) => {
 		return res.status(400).json({ error: 'text, senderId, roomId 모두 필요합니다.' });
 	}
 
+	let roomData, receiverId;
 	try {
+		// 1. 메시지 저장
 		const messageData = {
 			senderId,
 			text,
@@ -112,26 +114,43 @@ exports.sendMessage = async (req, res) => {
 		await db.collection('chatRooms').doc(roomId).collection('messages').add(messageData);
 		await db.collection('chatRooms').doc(roomId).set({ lastMessage: text }, { merge: true });
 
-		// 🔔 알림 전송
+		// 2. 채팅방 정보에서 receiverId 계산
 		const roomDoc = await db.collection('chatRooms').doc(roomId).get();
-		const roomData = roomDoc.data();
-		const receiverId = roomData.participants.find((uid) => uid !== senderId);
-		const userDoc = await db.collection('users').doc(receiverId).get();
-		const pushToken = userDoc.data().pushToken;
+		roomData = roomDoc.data();
+		if (!roomData || !roomData.participants) throw new Error('채팅방 데이터가 없습니다.');
 
-		if (pushToken) {
-			await axios.post(`${API_URL}/api/notifications/send`, {
-				userId: receiverId,
-				title: '📬 새로운 메시지',
-				message: text,
-			});
+		receiverId = roomData.participants.find((uid) => String(uid).trim() !== String(senderId).trim());
+
+		if (!receiverId) {
+			console.warn('⚠️ 수신자를 찾을 수 없습니다.');
+			return res.status(200).json({ message: '메시지 저장됨 (수신자 없음)' });
 		}
+
+		// 3. 수신자의 pushToken 가져오기
+		const userDoc = await db.collection('users').doc(receiverId).get();
+		const userData = userDoc.data();
+
+		if (!userData?.pushToken) {
+			console.warn('⚠️ pushToken이 없습니다. 알림 생략');
+			return res.status(200).json({ message: '메시지 저장됨 (알림 없음)' });
+		}
+
+		// 4. 알림 전송
+		await axios.post(`${API_URL}/api/notifications/send`, {
+			userId: receiverId,
+			title: '📬 새로운 메시지',
+			message: text,
+		});
 
 		res.json({ message: '메시지 저장 및 알림 전송 완료' });
 	} catch (err) {
-		console.error('❌ 메시지 저장 오류:', err);
-		res.status(500).json({ error: '메시지 저장 실패' });
+		console.error('❌ 메시지 저장 또는 알림 오류:', err);
+		res.status(500).json({ error: '메시지 저장 또는 알림 실패' });
 	}
+
+	console.log('📨 senderId:', senderId);
+	console.log('👥 participants:', roomData?.participants);
+	console.log('🎯 receiverId:', receiverId);
 };
 
 /**
