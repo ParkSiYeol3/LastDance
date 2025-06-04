@@ -7,6 +7,7 @@ import axios from 'axios';
 import { useStripe } from '@stripe/stripe-react-native';
 import { fetchMessages, sendMessage, markMessageAsRead } from '../components/ChatService';
 import { API_URL } from '../firebase-config';
+import * as ImagePicker from 'expo-image-picker';
 
 const ChatRoom = ({ route, navigation }) => {
 	const { roomId } = route.params;
@@ -268,6 +269,130 @@ const ChatRoom = ({ route, navigation }) => {
 		});
 	};
 
+	const handleCameraAndDetect = async () => {
+		const result = await ImagePicker.launchCameraAsync({
+			allowsEditing: true,
+			quality: 1,
+		});
+
+		if (!result.canceled && result.assets.length > 0) {
+			const imageUri = result.assets[0].uri;
+
+			const formData = new FormData();
+			formData.append('image', {
+				uri: imageUri,
+				type: 'image/jpeg',
+				name: 'photo.jpg',
+			});
+
+			try {
+				const response = await fetch('http://192.168.0.24:8082/predict', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'multipart/form-data',
+					},
+					body: formData,
+				});
+
+				const data = await response.json();
+
+				if (data.predictions && data.predictions.length > 0) {
+					const summary = data.predictions.map((p) => `ID: ${p.class_id}, 확률: ${(p.confidence * 100).toFixed(1)}%`).join('\n');
+
+					Alert.alert('AI 감지 결과', summary);
+
+					// 🔽 메시지 자동 전송
+					const token = await AsyncStorage.getItem('accessToken');
+					await axios.post(
+						`${API_URL}/api/chat/rooms/${roomId}/messages`,
+						{
+							text: `[AI 얼룩 감지 결과]\n${summary}`,
+							senderId: userId,
+						},
+						{
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
+						}
+					);
+
+					const updatedMsgs = await fetchMessages(roomId);
+					setMessages(updatedMsgs);
+				} else {
+					Alert.alert('AI 감지 결과', '감지된 얼룩이 없습니다.');
+				}
+			} catch (err) {
+				console.error(err);
+				Alert.alert('서버 오류', 'Flask 서버 연결 실패');
+			}
+		}
+	};
+
+	const handleGalleryAndDetect = async () => {
+		const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+		if (!permission.granted) {
+			Alert.alert('권한 오류', '갤러리 접근 권한이 필요합니다.');
+			return;
+		}
+
+		const result = await ImagePicker.launchImageLibraryAsync({
+			allowsEditing: true,
+			quality: 1,
+		});
+
+		if (!result.canceled && result.assets.length > 0) {
+			const imageUri = result.assets[0].uri;
+
+			const formData = new FormData();
+			formData.append('image', {
+				uri: imageUri,
+				type: 'image/jpeg',
+				name: 'photo.jpg',
+			});
+
+			try {
+				const response = await fetch('http://192.168.0.24:8082/predict', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'multipart/form-data',
+					},
+					body: formData,
+				});
+
+				const data = await response.json();
+
+				if (data.predictions && data.predictions.length > 0) {
+					const summary = data.predictions.map((p) => `ID: ${p.class_id}, 확률: ${(p.confidence * 100).toFixed(1)}%`).join('\n');
+
+					Alert.alert('AI 감지 결과', summary);
+
+					// 채팅 메시지로도 전송
+					const token = await AsyncStorage.getItem('accessToken');
+					await axios.post(
+						`${API_URL}/api/chat/rooms/${roomId}/messages`,
+						{
+							text: `[AI 감지 결과 - 갤러리]\n${summary}`,
+							senderId: userId,
+						},
+						{
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
+						}
+					);
+
+					const updatedMsgs = await fetchMessages(roomId);
+					setMessages(updatedMsgs);
+				} else {
+					Alert.alert('AI 감지 결과', '감지된 얼룩이 없습니다.');
+				}
+			} catch (err) {
+				console.error(err);
+				Alert.alert('서버 오류', 'Flask 서버 연결 실패');
+			}
+		}
+	};
+
 	return (
 		<View style={styles.container}>
 			{/* 상단에 신고하기 버튼 */}
@@ -312,6 +437,34 @@ const ChatRoom = ({ route, navigation }) => {
 						<Text style={styles.buttonText}>보증금 결제 요청</Text>
 					</TouchableOpacity>
 				</>
+			)}
+			{isSeller && (
+				<TouchableOpacity
+					onPress={handleCameraAndDetect}
+					style={{
+						backgroundColor: '#888',
+						padding: 10,
+						marginHorizontal: 10,
+						borderRadius: 6,
+						marginBottom: 12,
+					}}
+				>
+					<Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>📷 AI 얼룩 감지</Text>
+				</TouchableOpacity>
+			)}
+			{isSeller && (
+				<TouchableOpacity
+					onPress={handleGalleryAndDetect}
+					style={{
+						backgroundColor: '#888',
+						padding: 10,
+						marginHorizontal: 10,
+						borderRadius: 6,
+						marginBottom: 12,
+					}}
+				>
+					<Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>🖼 갤러리에서 이미지 감지</Text>
+				</TouchableOpacity>
 			)}
 
 			{/* 3) 판매자: 거래 종료 버튼 */}
