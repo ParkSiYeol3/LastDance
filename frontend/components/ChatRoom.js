@@ -270,14 +270,24 @@ const ChatRoom = ({ route, navigation }) => {
 	};
 
 	const handleCameraAndDetect = async () => {
-		const result = await ImagePicker.launchCameraAsync({
-			allowsEditing: true,
-			quality: 1,
-		});
+		try {
+			const permission = await ImagePicker.requestCameraPermissionsAsync();
+			if (!permission.granted) {
+				Alert.alert('권한 오류', '카메라 접근 권한이 필요합니다.');
+				return;
+			}
 
-		if (!result.canceled && result.assets.length > 0) {
+			const result = await ImagePicker.launchCameraAsync({
+				allowsEditing: true,
+				quality: 1,
+			});
+
+			if (result.canceled || !result.assets?.length) {
+				Alert.alert('취소됨', '사진이 선택되지 않았습니다.');
+				return;
+			}
+
 			const imageUri = result.assets[0].uri;
-
 			const formData = new FormData();
 			formData.append('image', {
 				uri: imageUri,
@@ -285,46 +295,28 @@ const ChatRoom = ({ route, navigation }) => {
 				name: 'photo.jpg',
 			});
 
-			try {
-				const response = await fetch('http://192.168.0.24:8082/predict', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'multipart/form-data',
-					},
-					body: formData,
-				});
+			const response = await fetch('http://192.168.1.173:8082/predict', {
+				method: 'POST',
+				headers: { 'Content-Type': 'multipart/form-data' },
+				body: formData,
+			});
 
-				const data = await response.json();
+			const data = await response.json();
+			if (data.predictions?.length) {
+				const summary = data.predictions.map((p) => `ID: ${p.class_id}, 확률: ${(p.confidence * 100).toFixed(1)}%`).join('\n');
+				Alert.alert('AI 감지 결과', summary);
 
-				if (data.predictions && data.predictions.length > 0) {
-					const summary = data.predictions.map((p) => `ID: ${p.class_id}, 확률: ${(p.confidence * 100).toFixed(1)}%`).join('\n');
+				const token = await AsyncStorage.getItem('accessToken');
+				await axios.post(`${API_URL}/api/chat/rooms/${roomId}/messages`, { text: `[AI 얼룩 감지 결과]\n${summary}`, senderId: userId }, { headers: { Authorization: `Bearer ${token}` } });
 
-					Alert.alert('AI 감지 결과', summary);
-
-					// 🔽 메시지 자동 전송
-					const token = await AsyncStorage.getItem('accessToken');
-					await axios.post(
-						`${API_URL}/api/chat/rooms/${roomId}/messages`,
-						{
-							text: `[AI 얼룩 감지 결과]\n${summary}`,
-							senderId: userId,
-						},
-						{
-							headers: {
-								Authorization: `Bearer ${token}`,
-							},
-						}
-					);
-
-					const updatedMsgs = await fetchMessages(roomId);
-					setMessages(updatedMsgs);
-				} else {
-					Alert.alert('AI 감지 결과', '감지된 얼룩이 없습니다.');
-				}
-			} catch (err) {
-				console.error(err);
-				Alert.alert('서버 오류', 'Flask 서버 연결 실패');
+				const updatedMsgs = await fetchMessages(roomId);
+				setMessages(updatedMsgs);
+			} else {
+				Alert.alert('AI 감지 결과', '감지된 얼룩이 없습니다.');
 			}
+		} catch (err) {
+			console.error(err);
+			Alert.alert('서버 오류', 'Flask 서버 연결 실패');
 		}
 	};
 
@@ -351,7 +343,7 @@ const ChatRoom = ({ route, navigation }) => {
 			});
 
 			try {
-				const response = await fetch('http://192.168.0.24:8082/predict', {
+				const response = await fetch('http://192.168.1.173:8082/predict', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'multipart/form-data',

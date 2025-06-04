@@ -31,7 +31,7 @@ const StainDetector = () => {
 		});
 
 		try {
-			const response = await fetch('http://192.168.0.24:8082/predict', {
+			const response = await fetch('http://192.168.1.173:8082/predict', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'multipart/form-data',

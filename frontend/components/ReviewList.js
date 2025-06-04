@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 
-const API_URL = 'http://192.168.0.27:3000';
-
+const API_URL = 'http://192.168.1.173:3000';
 
 export default function ReviewList() {
 	const route = useRoute();
