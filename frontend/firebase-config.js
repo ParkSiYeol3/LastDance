@@ -22,6 +22,8 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-export const API_URL = 'http://192.168.1.173:3000';
+
+
+export const API_URL = 'http://172.30.1.6:3000';
 
 // API_URL을 PC IP로 변경

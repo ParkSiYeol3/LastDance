@@ -33,13 +33,7 @@ const Settings = ({ navigation }) => {
     <View style={styles.screen}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>설정</Text>
-        <TouchableOpacity>
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -108,7 +102,7 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     borderBottomWidth: 0.5,
     borderColor: '#ddd',
     backgroundColor: '#fff',
