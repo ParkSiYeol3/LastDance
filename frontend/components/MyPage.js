@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Image, ScrollView, } from 'react-native';
 import Footer from '../components/Footer';
 import gearIcon from '../assets/gear.png';
 import { db } from '../firebase-config';
@@ -88,6 +88,7 @@ const MyPage = ({ navigation }) => {
 	return (
 		<View style={styles.screen}>
 			<StatusBar barStyle='dark-content' />
+
 			<View style={styles.profileBox}>
 				<Image
 					source={{
@@ -150,9 +151,20 @@ const MenuItem = ({ label, onPress }) => (
 export default MyPage;
 
 const styles = StyleSheet.create({
-	screen: { flex: 1, backgroundColor: '#ffffff' },
-	content: { padding: 20, paddingBottom: 100 },
-	footer: { position: 'absolute', bottom: 0, height: 85, width: '100%' },
+	screen: { 
+		flex: 1, 
+		backgroundColor: '#ffffff' 
+	},
+	content: { 
+		padding: 20, 
+		paddingBottom: 100 
+	},
+	footer: { 
+		position: 'absolute', 
+		bottom: 0, 
+		height: 85, 
+		width: '100%' 
+	},
 	profileBox: {
 		flexDirection: 'row',
 		alignItems: 'center',
@@ -162,14 +174,41 @@ const styles = StyleSheet.create({
 		marginTop: 10,
 		marginBottom: 20,
 	},
-	profileImage: { width: 60, height: 60, borderRadius: 30, marginRight: 16 },
-	profileInfo: { flex: 1 },
-	nickname: { fontSize: 18, fontWeight: 'bold' },
-	trust: { fontSize: 14, color: '#666', marginTop: 4 },
-	starIcon: { width: 15, height: 15 },
-	gearButton: { padding: 6 },
-	gearIcon: { width: 22, height: 22, resizeMode: 'contain' },
-	menuBox: { borderTopWidth: 1, borderColor: '#eee', marginTop: 12 },
+	profileImage: { 
+		width: 60, 
+		height: 60, 
+		borderRadius: 30, 
+		marginRight: 16 
+	},
+	profileInfo: { 
+		flex: 1 
+	},
+	nickname: { 
+		fontSize: 18, 
+		fontWeight: 'bold' 
+	},
+	trust: { 
+		fontSize: 14, 
+		color: '#666', 
+		marginTop: 4 
+	},
+	starIcon: { 
+		width: 15, 
+		height: 15 
+	},
+	gearButton: { 
+		padding: 6 
+	},
+	gearIcon: { 
+		width: 22, 
+		height: 22, 
+		resizeMode: 'contain' 
+	},
+	menuBox: { 
+		borderTopWidth: 1, 
+		borderColor: '#eee', 
+		marginTop: 12 
+	},
 	menuItem: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
@@ -177,8 +216,13 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderColor: '#eee',
 	},
-	menuText: { fontSize: 16 },
-	menuArrow: { fontSize: 20, color: '#999' },
+	menuText: { 
+		fontSize: 16, 
+	},
+	menuArrow: { 
+		fontSize: 20, 
+		color: '#999' 
+	},
 	adminButton: {
 		marginTop: 20,
 		backgroundColor: '#4CAF50',
@@ -186,5 +230,9 @@ const styles = StyleSheet.create({
 		borderRadius: 10,
 		alignItems: 'center',
 	},
-	adminButtonText: { color: 'white', fontSize: 14, fontWeight: '600' },
+	adminButtonText: { 
+		color: 'white', 
+		fontSize: 14, 
+		fontWeight: '600' 
+	},
 });

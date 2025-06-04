@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Dimensions, ActivityIndicator, Text, Image, TouchableOpacity } from 'react-native';
+import Footer from '../components/Footer';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { collection, getDocs } from 'firebase/firestore';
@@ -118,6 +119,9 @@ export default function MapScreen() {
         	</View>
       	</View>
     	)}
+		<View style={styles.footer}>Add commentMore actions
+			<Footer navigation={navigation} />
+		</View>
   	</View>
 	);
 }
@@ -222,4 +226,10 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 		alignSelf: 'flex-start',
 	},
+	footer: {
+    	position: 'absolute',
+    	bottom: 0,
+    	height: 85,
+    	width: '100%',
+  	},
 });

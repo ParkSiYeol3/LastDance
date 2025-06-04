@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Image, Alert, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import Footer from './Footer';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -11,235 +12,234 @@ const SERVER_URL = 'http://192.168.0.24:3000'; // ⚠️ 실제 IP 또는 도메
 
 const AddItemScreen = ({ navigation }) => {
 	const [name, setName] = useState('');
-	const [description, setDescription] = useState('');
-	const [imageInput, setImageInput] = useState('');
-	const [imageList, setImageList] = useState([]); // { url, public_id }
-	const [uploading, setUploading] = useState(false);
-	const [category, setCategory] = useState('');
+  	const [description, setDescription] = useState('');
+  	const [imageInput, setImageInput] = useState('');
+  	const [imageURLs, setImageURLs] = useState([]);
+  	const [uploading, setUploading] = useState(false);
+  	const [category, setCategory] = useState('');
 
-	const categoryStyles = {
-		상의: { icon: '👕', color: '#31C585' },
-		하의: { icon: '👖', color: '#4A90E2' },
-		신발: { icon: '👟', color: '#FFA500' },
-		가방: { icon: '👜', color: '#9B59B6' },
-	};
 
-	const uploadToCloudinary = async (imageUri) => {
-		const data = new FormData();
-		data.append('file', {
-			uri: imageUri,
-			type: 'image/jpeg',
-			name: 'photo.jpg',
-		});
-		data.append('upload_preset', UPLOAD_PRESET);
+  const categoryStyles = {
+    상의: { icon: '👕', color: '#31C585' },
+	하의: { icon: '👖', color: '#4A90E2' },
+	신발: { icon: '👟', color: '#FFA500' },
+	가방: { icon: '👜', color: '#9B59B6' },
+  };
 
-		try {
-			const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-				method: 'POST',
-				body: data,
-			});
-			const result = await res.json();
-			return { url: result.secure_url, public_id: result.public_id };
-		} catch (err) {
-			console.error('Cloudinary 업로드 실패:', err);
-			return null;
-		}
-	};
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 필요', '카메라 접근 권한이 필요합니다.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      setImageURLs((prev) => [...prev, result.assets[0].uri]);
+    }
+  };
 
-	const handlePickImage = async () => {
-		const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-		if (status !== 'granted') {
-			Alert.alert('권한 필요', '갤러리 접근 권한이 필요합니다.');
-			return;
-		}
+  const handleAddImageURL = () => {
+    if (imageInput.trim()) {
+      setImageURLs((prev) => [...prev, imageInput.trim()]);
+      setImageInput('');
+    }
+  };
 
-		const result = await ImagePicker.launchImageLibraryAsync({
-			mediaTypes: ImagePicker.MediaTypeOptions.Images,
-			quality: 0.7,
-		});
+  const handleSubmit = async () => {
+    if (!name || !description || !category || imageURLs.length === 0) {
+      Alert.alert('필수 입력', '모든 필드를 입력해주세요.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('위치 권한 필요', '위치 권한을 허용해야 합니다.');
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({});
+      const user = auth.currentUser;
+      await addDoc(collection(db, 'items'), {
+        userId: user.uid,
+        name,
+        description,
+        category,
+        imageURLs,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        timestamp: serverTimestamp(),
+      });
+      Alert.alert('성공', '상품이 등록되었습니다.');
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('실패', '상품 등록에 실패했습니다.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
-		if (!result.canceled && result.assets.length > 0) {
-			const uri = result.assets[0].uri;
-			const uploaded = await uploadToCloudinary(uri);
-			if (uploaded) {
-				setImageList((prev) => [...prev, uploaded]);
-			} else {
-				Alert.alert('오류', '이미지 업로드 실패');
-			}
-		}
-	};
+  return (
+    <>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.header}>게시글 작성</Text>
 
-	const handleTakePhoto = async () => {
-		const { status } = await ImagePicker.requestCameraPermissionsAsync();
-		if (status !== 'granted') {
-			Alert.alert('권한 필요', '카메라 접근 권한이 필요합니다.');
-			return;
-		}
+        <TextInput
+          placeholder="상품명"
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+        />
 
-		const result = await ImagePicker.launchCameraAsync({
-			mediaTypes: ImagePicker.MediaTypeOptions.Images,
-			quality: 0.7,
-		});
+        <TextInput
+          placeholder="상품 설명"
+          style={[styles.input, styles.textArea]}
+          multiline
+          value={description}
+          onChangeText={setDescription}
+        />
 
-		if (!result.canceled && result.assets.length > 0) {
-			const uri = result.assets[0].uri;
-			const uploaded = await uploadToCloudinary(uri);
-			if (uploaded) {
-				setImageList((prev) => [...prev, uploaded]);
-			} else {
-				Alert.alert('오류', '이미지 업로드 실패');
-			}
-		}
-	};
+        <View style={styles.categoryContainer}>
+          {Object.keys(categoryStyles).map((cat) => {
+            const selected = category === cat;
+            const { icon, color } = categoryStyles[cat];
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.categoryBtn, selected && { backgroundColor: color }]}
+                onPress={() => setCategory(cat)}
+              >
+                <Text style={[styles.categoryText, selected && { color: '#fff' }]}>{icon} {cat}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-	const handleDeleteImage = async (index) => {
-		const target = imageList[index];
-		Alert.alert('삭제 확인', '이 이미지를 삭제할까요?', [
-			{ text: '취소', style: 'cancel' },
-			{
-				text: '삭제',
-				style: 'destructive',
-				onPress: async () => {
-					try {
-						// 서버에 삭제 요청
-						if (target.public_id) {
-							await fetch(`${SERVER_URL}/api/cloudinary/delete-image`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json' },
-								body: JSON.stringify({ public_id: target.public_id }),
-							});
-						}
-						setImageList((prev) => prev.filter((_, i) => i !== index));
-					} catch (err) {
-						console.error('이미지 삭제 오류:', err);
-						Alert.alert('오류', '삭제 실패');
-					}
-				},
-			},
-		]);
-	};
+        <View style={styles.imageRow}>
+          <TextInput
+            placeholder="이미지 URL"
+            style={[styles.input, { flex: 1 }]}
+            value={imageInput}
+            onChangeText={setImageInput}
+          />
+          <TouchableOpacity style={styles.urlAddBtn} onPress={handleAddImageURL}>
+            <Text style={{ color: '#fff' }}>추가</Text>
+          </TouchableOpacity>
+        </View>
 
-	const handleAddImageURL = () => {
-		if (imageInput.trim()) {
-			setImageList((prev) => [...prev, { url: imageInput.trim(), public_id: null }]);
-			setImageInput('');
-		}
-	};
+        <TouchableOpacity style={styles.cameraBtn} onPress={handleTakePhoto}>
+          <Text style={styles.cameraText}>📷 카메라로 촬영하기</Text>
+        </TouchableOpacity>
 
-	const handleSubmit = async () => {
-		if (!name || !description || !category || imageList.length === 0) {
-			Alert.alert('필수 입력', '모든 항목과 이미지를 등록해주세요.');
-			return;
-		}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+          {imageURLs.map((url, idx) => (
+            <Image key={idx} source={{ uri: url }} style={styles.image} />
+          ))}
+        </ScrollView>
 
-		setUploading(true);
-		try {
-			const { status } = await Location.requestForegroundPermissionsAsync();
-			if (status !== 'granted') {
-				Alert.alert('위치 권한 필요', '위치 접근 권한이 필요합니다.');
-				return;
-			}
+        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={uploading}>
+          <Text style={styles.submitText}>{uploading ? '등록 중...' : '작성하기'}</Text>
+        </TouchableOpacity>
+      </ScrollView>
 
-			const location = await Location.getCurrentPositionAsync({});
-			const user = auth.currentUser;
-
-			await addDoc(collection(db, 'items'), {
-				userId: user.uid,
-				name,
-				description,
-				category,
-				imageURLs: imageList.map((img) => img.url),
-				latitude: location.coords.latitude,
-				longitude: location.coords.longitude,
-				timestamp: serverTimestamp(),
-			});
-
-			Alert.alert('등록 완료', '상품이 등록되었습니다.');
-			navigation.goBack();
-		} catch (err) {
-			console.error('등록 실패:', err);
-			Alert.alert('오류', '상품 등록 실패');
-		} finally {
-			setUploading(false);
-		}
-	};
-
-	return (
-		<ScrollView contentContainerStyle={styles.container}>
-			<Text style={styles.title}>상품 등록</Text>
-
-			<TextInput placeholder='상품명' style={styles.input} value={name} onChangeText={setName} />
-			<TextInput placeholder='설명' style={[styles.input, styles.textarea]} value={description} multiline onChangeText={setDescription} />
-
-			<View style={styles.categoryContainer}>
-				{Object.keys(categoryStyles).map((cat) => {
-					const isSelected = category === cat;
-					const { icon, color } = categoryStyles[cat];
-					return (
-						<TouchableOpacity key={cat} style={[styles.categoryBtn, isSelected && { backgroundColor: color }]} onPress={() => setCategory(cat)}>
-							<Text style={[styles.categoryText, isSelected && { color: '#fff', fontWeight: 'bold' }]}>
-								{icon} {cat}
-							</Text>
-						</TouchableOpacity>
-					);
-				})}
-			</View>
-
-			<View style={{ flexDirection: 'row', width: '100%', marginBottom: 10 }}>
-				<TextInput placeholder='이미지 URL' style={[styles.input, { flex: 1 }]} value={imageInput} onChangeText={setImageInput} />
-				<TouchableOpacity style={styles.addBtn} onPress={handleAddImageURL}>
-					<Text style={{ color: '#fff' }}>+ 추가</Text>
-				</TouchableOpacity>
-			</View>
-
-			<TouchableOpacity style={styles.cameraBtn} onPress={handleTakePhoto}>
-				<Text style={{ color: '#fff', textAlign: 'center' }}>📷 카메라로 촬영하기</Text>
-			</TouchableOpacity>
-
-			<TouchableOpacity style={styles.cameraBtn} onPress={handlePickImage}>
-				<Text style={{ color: '#fff', textAlign: 'center' }}>🖼 갤러리에서 선택하기</Text>
-			</TouchableOpacity>
-
-			<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-				{imageList.map((img, index) => (
-					<View key={index} style={{ position: 'relative', marginRight: 10 }}>
-						<Image source={{ uri: img.url }} style={styles.image} />
-						<TouchableOpacity
-							onPress={() => handleDeleteImage(index)}
-							style={{
-								position: 'absolute',
-								top: -6,
-								right: -6,
-								backgroundColor: 'red',
-								borderRadius: 10,
-								width: 20,
-								height: 20,
-								justifyContent: 'center',
-								alignItems: 'center',
-							}}
-						>
-							<Text style={{ color: 'white', fontSize: 12 }}>X</Text>
-						</TouchableOpacity>
-					</View>
-				))}
-			</ScrollView>
-
-			<Button title={uploading ? '등록 중...' : '등록하기'} onPress={handleSubmit} disabled={uploading} />
-		</ScrollView>
-	);
+      <View style={styles.footer}>
+        <Footer navigation={navigation} />
+      </View>
+    </>
+  );
 };
 
 export default AddItemScreen;
 
 const styles = StyleSheet.create({
-	container: { padding: 20, backgroundColor: '#fff', alignItems: 'center' },
-	title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-	input: { borderColor: '#ccc', borderWidth: 1, borderRadius: 5, padding: 10, marginBottom: 15, width: '100%' },
-	textarea: { height: 100, textAlignVertical: 'top' },
-	cameraBtn: { backgroundColor: '#31C585', padding: 12, borderRadius: 6, marginBottom: 10, width: '100%' },
-	addBtn: { backgroundColor: '#555', justifyContent: 'center', paddingHorizontal: 12, borderRadius: 5, marginLeft: 5 },
-	image: { width: 120, height: 120, borderRadius: 8 },
-	categoryContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 15, width: '100%' },
-	categoryBtn: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, paddingVertical: 10, paddingHorizontal: 16, marginRight: 8, marginBottom: 8 },
-	categoryText: { color: '#333', fontSize: 14 },
+	container: {
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  categoryBtn: {
+  	borderWidth: 1,
+  	borderColor: '#ccc',
+  	borderRadius: 12,          
+  	paddingVertical: 14,        
+  	paddingHorizontal: 20,      
+  	marginRight: 10,
+  	marginBottom: 12,
+  	minWidth: 100,              
+  	alignItems: 'center',      
+  },
+  categoryText: {
+  	color: '#333',
+  	fontSize: 15,               
+  },
+  imageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  urlAddBtn: {
+    marginLeft: 8,
+    backgroundColor: '#111',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+  },
+  cameraBtn: {
+    backgroundColor: '#111',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cameraText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  submitBtn: {
+    backgroundColor: '#31C585',
+    padding: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  submitText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    height: 85,
+    width: '100%',
+  },
 });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, Alert, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { collection, doc, addDoc, query, where, getDoc, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, query, where, getDoc, getDocs, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL, db } from '../firebase-config';
@@ -12,325 +12,427 @@ import { getAuth } from 'firebase/auth';
 
 const ItemDetail = () => {
 	const route = useRoute();
-	const navigation = useNavigation();
-	const { itemId } = route.params || {};
+  	const navigation = useNavigation();
+  	const { itemId } = route.params || {};
 
-	const [item, setItem] = useState(null);
-	const [currentUser, setCurrentUser] = useState(null);
-	const [itemOwnerName, setItemOwnerName] = useState('');
-	const [itemOwnerProfile, setItemOwnerProfile] = useState(null);
-	const [rentalRequested, setRentalRequested] = useState(false);
-	const [editing, setEditing] = useState(false);
-	const [loadingChat, setLoadingChat] = useState(false);
-	const [liked, setLiked] = useState(false);
+  	const [item, setItem] = useState(null	);
+  	const [currentUser, setCurrentUser] = useState(null);
+  	const [itemOwnerName, setItemOwnerName] = useState('');
+  	const [itemOwnerProfile, setItemOwnerProfile] = useState(null);
+  	const [rentalRequested, setRentalRequested] = useState(false);
+  	const [editing, setEditing] = useState(false);
+  	const [loadingChat, setLoadingChat] = useState(false);
+  	const [liked, setLiked] = useState(false);
 
-	useEffect(() => {
-		if (!itemId) {
-			Alert.alert('오류', '아이템 정보가 잘못되었습니다.');
-			navigation.goBack();
-			return;
-		}
-		loadUserAndItem();
-	}, []);
+  	useEffect(() => {
+    	loadUserAndItem();
+    	logRecentView();
+    	if (itemId) saveRecentView(itemId);
+  	}, [itemId]);
 
-	const loadUserAndItem = async () => {
-		try {
-			const userJson = await AsyncStorage.getItem('currentUser');
-			if (userJson) {
-				const user = JSON.parse(userJson);
-				setCurrentUser(user);
-				await fetchItem();
-				if (user?.uid) await fetchItemStatus(user.uid);
-			}
-		} catch (error) {
-			console.error('유저 정보 로딩 오류:', error);
-		}
+	const saveRecentView = async (itemId) => {
+  	const user = getAuth().currentUser;
+  	if (!user) return;
+
+  	try {
+    	await addDoc(collection(db, 'recentViews'), {
+      	userId: user.uid,
+      	itemId,
+      	viewedAt: serverTimestamp(),
+    	});
+  	} catch (error) {
+    	console.error('최근 본 상품 기록 실패:', error);
+  	}
 	};
 
-	const fetchItem = async () => {
-		try {
-			const res = await axios.get(`${API_URL}/api/items/${itemId}`);
-			const fetched = res.data?.item ?? null;
-			setItem(fetched);
-			setItemOwnerName(res.data?.itemOwnerName ?? '');
-			if (fetched?.userId) await fetchOwnerProfile(fetched.userId);
-		} catch (err) {
-			Alert.alert('오류', '아이템 정보를 불러올 수 없습니다.');
-		}
-	};
+ const logRecentView = async () => {
+    try {
+      const userJson = await AsyncStorage.getItem('currentUser');
+      if (!userJson) return;
+      const user = JSON.parse(userJson);
 
-	const fetchItemStatus = async (userId) => {
-		try {
-			const res = await axios.get(`${API_URL}/api/items/${itemId}/status`, {
-				params: { userId },
-			});
-			setLiked(res.data?.liked ?? false);
-		} catch (error) {
-			console.error('상태 불러오기 실패:', error);
-		}
-	};
+      const recentRef = collection(db, 'recentViews');
+      const existingQuery = query(
+        recentRef,
+        where('userId', '==', user.uid),
+        where('itemId', '==', itemId)
+      );
+      const snapshot = await getDocs(existingQuery);
 
-	const fetchOwnerProfile = async (ownerId) => {
-		try {
-			const res = await axios.get(`${API_URL}/api/users/${ownerId}`);
-			setItemOwnerProfile(res.data);
-		} catch (err) {
-			console.error('판매자 프로필 불러오기 실패:', err);
-		}
-	};
+      // 기존 문서가 있으면 삭제 후 새로 추가 (최신 시간 순 유지)
+      snapshot.forEach(async (docSnap) => {
+        await deleteDoc(docSnap.ref);
+        });
 
-	const toggleLike = async () => {
-		if (!currentUser || !itemId) return;
+      await addDoc(recentRef, {
+        userId: user.uid,
+        itemId: itemId,
+        viewedAt: new Date(),
+      });
+    } catch (error) {
+      console.error('최근 본 상품 기록 실패:', error);
+    }
+  };
 
-		try {
-			const itemRef = doc(db, 'items', itemId);
-			const itemSnap = await getDoc(itemRef);
+  const loadUserAndItem = async () => {
+    try {
+      const userJson = await AsyncStorage.getItem('currentUser');
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        setCurrentUser(user);
+        await fetchItem();
+        if (user?.uid) await fetchItemStatus(user.uid);
+      }
+    } catch (error) {
+      console.error('유저 정보 로딩 오류:', error);
+    }
+  };
 
-			if (!itemSnap.exists()) return;
+  const fetchItem = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/items/${itemId}`);
+      setItem(res.data?.item ?? null);
+      setItemOwnerName(res.data?.itemOwnerName ?? '');
+      if (res.data?.item?.userId) {
+        await fetchOwnerProfile(res.data.item.userId);
+      }
+    } catch (err) {
+      console.error('아이템 불러오기 실패:', err);
+      Alert.alert('오류', '아이템 정보를 불러올 수 없습니다.');
+    }
+  };
 
-			const likedBy = itemSnap.data().likedBy || [];
-			const isLiked = likedBy.includes(currentUser.uid);
-			const updatedLikes = isLiked ? likedBy.filter((uid) => uid !== currentUser.uid) : [...likedBy, currentUser.uid];
+  const fetchItemStatus = async (userId) => {
+    try {
+      const itemRef = doc(db, 'items', itemId);
+      const itemSnap = await getDoc(itemRef);
 
-			await updateDoc(itemRef, { likedBy: updatedLikes });
+      if (itemSnap.exists()) {
+        const likedBy = itemSnap.data().likedBy || [];
+        setLiked(likedBy.includes(userId));
+      } else {
+        setLiked(false);
+      }
+    } catch (error) {
+      console.error('좋아요 상태 확인 실패:', error);
+    }
+  };
 
-			const favoritesRef = collection(db, 'favorites');
-			const favQuery = query(favoritesRef, where('userId', '==', currentUser.uid), where('itemId', '==', itemId));
-			const favSnapshot = await getDocs(favQuery);
+  const fetchOwnerProfile = async (ownerId) => {
+    try {
+      const res = await axios.get(`${API_URL}/api/users/${ownerId}`);
+      setItemOwnerProfile(res.data);
+    } catch (err) {
+      console.error('판매자 프로필 불러오기 실패:', err);
+    }
+  };
 
-			if (isLiked) {
-				favSnapshot.forEach(async (docSnap) => {
-					await deleteDoc(docSnap.ref);
-				});
-			} else if (favSnapshot.empty) {
-				await addDoc(favoritesRef, {
-					userId: currentUser.uid,
-					itemId,
-					createdAt: new Date(),
-				});
-			}
+ const toggleLike = async () => {
+  if (!currentUser || !itemId) return;
 
-			setLiked(!isLiked);
-		} catch (err) {
-			console.error('좋아요 처리 실패:', err);
-		}
-	};
+  try {
+    const itemRef = doc(db, 'items', itemId);
+    const itemSnap = await getDoc(itemRef);
 
-	const handleRentalRequest = async () => {
-		const token = await AsyncStorage.getItem('accessToken');
-		await axios.post(
-			`${API_URL}/api/items/${itemId}/rentals`,
-			{
-				requesterId: currentUser.uid,
-				ownerId: item.userId,
-			},
-			{
-				headers: { Authorization: `Bearer ${token}` },
-			}
-		);
-		setRentalRequested(true);
-	};
+    if (!itemSnap.exists()) {
+      console.warn('아이템 문서가 존재하지 않음');
+      return;
+    }
 
-	const handleDelete = async () => {
-		Alert.alert('삭제 확인', '정말 삭제하시겠습니까?', [
-			{ text: '취소', style: 'cancel' },
-			{
-				text: '삭제',
-				style: 'destructive',
-				onPress: async () => {
-					const token = await AsyncStorage.getItem('accessToken');
-					await axios.delete(`${API_URL}/api/items/${itemId}`, {
-						headers: { Authorization: `Bearer ${token}` },
-					});
-					navigation.goBack();
-				},
-			},
-		]);
-	};
+    const likedBy = itemSnap.data().likedBy || [];
+    const isLiked = likedBy.includes(currentUser.uid);
+    const updatedLikes = isLiked
+      ? likedBy.filter((uid) => uid !== currentUser.uid)
+      : [...likedBy, currentUser.uid];
 
-	const handleStartChat = async () => {
-		const user = getAuth().currentUser;
-		if (!user) {
-			Alert.alert('로그인 필요', '채팅을 시작하려면 로그인하세요.');
-			return;
-		}
+    // 1. items 컬렉션 업데이트
+    await updateDoc(itemRef, { likedBy: updatedLikes });
 
-		const token = await user.getIdToken(true);
-		const res = await axios.post(
-			`${API_URL}/api/chat/start`,
-			{
-				userId1: user.uid,
-				userId2: item.userId,
-				rentalItemId: itemId,
-			},
-			{
-				headers: { Authorization: `Bearer ${token}` },
-			}
-		);
+    // 2. favorites 컬렉션도 동기화
+    const favoritesRef = collection(db, 'favorites');
+    const favQuery = query(
+      favoritesRef,
+      where('userId', '==', currentUser.uid),
+      where('itemId', '==', itemId)
+    );
+    const favSnapshot = await getDocs(favQuery);
 
-		navigation.navigate('ChatRoom', { roomId: res.data.chatRoomId });
-	};
+    if (isLiked) {
+      // 이미 좋아요 → 취소 → favorites 문서 삭제
+      favSnapshot.forEach(async (docSnap) => {
+        await deleteDoc(docSnap.ref);
+      });
+    } else {
+      // 새로 좋아요 → favorites 문서 추가
+      if (favSnapshot.empty) {
+        await addDoc(favoritesRef, {
+          userId: currentUser.uid,
+          itemId: itemId,
+          createdAt: new Date(),
+        });
+      }
+    }
 
-	const isOwner = currentUser?.uid === item?.userId;
+    // 상태 반영
+    setLiked(!isLiked);
+  } catch (err) {
+    console.error('좋아요 처리 실패:', err);
+  }
+};
 
-	if (!item) {
-		return (
-			<View style={styles.center}>
-				<Text>로딩 중...</Text>
-			</View>
-		);
-	}
+const handleRentalRequest = async () => {
+    const token = await AsyncStorage.getItem('accessToken');
+    await axios.post(`${API_URL}/api/items/${itemId}/rentals`, {
+      requesterId: currentUser.uid,
+      ownerId: item.userId,
+    }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setRentalRequested(true);
+  };
 
-	return (
-		<ScrollView contentContainerStyle={styles.container} nestedScrollEnabled={true}>
-			<View style={styles.imageBox}>
-				{Array.isArray(item.imageURLs) && item.imageURLs.length > 0 ? (
-					<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageSlider}>
-						{item.imageURLs.map((url, index) => (
-							<Image key={index} source={{ uri: url }} style={styles.image} />
-						))}
-					</ScrollView>
-				) : (
-					item.imageURL && <Image source={{ uri: item.imageURL }} style={styles.image} />
-				)}
+  const handleDelete = async () => {
+    Alert.alert('삭제 확인', '정말 삭제하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: async () => {
+          const token = await AsyncStorage.getItem('accessToken');
+          await axios.delete(`${API_URL}/api/items/${itemId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          navigation.goBack();
+        },
+      },
+    ]);
+  };
 
-				<View style={styles.iconContainer}>
-					<TouchableOpacity onPress={toggleLike}>
-						<Text style={[styles.icon, liked && styles.liked]}>❤️</Text>
-					</TouchableOpacity>
-				</View>
-			</View>
+  const handleStartChat = async () => {
+    const user = getAuth().currentUser;
+    if (!user) {
+      Alert.alert('로그인 필요', '채팅을 시작하려면 로그인하세요.');
+      return;
+    }
 
-			<View style={styles.card}>
-				<Text style={styles.title}>{item.name}</Text>
-				<Text style={styles.description}>{item.description}</Text>
+    const token = await user.getIdToken(true);
+    const res = await axios.post(`${API_URL}/api/chat/start`, {
+      userId1: user.uid,
+      userId2: item.userId,
+      rentalItemId: itemId,
+    }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-				{item.userId && (
-					<View style={styles.sellerRow}>
-						<Text style={styles.ownerText}>판매자: {itemOwnerName}</Text>
-						<TouchableOpacity
-							style={styles.reviewButton}
-							onPress={() =>
-								navigation.navigate('ReviewList', {
-									userId: item.userId,
-									type: 'received',
-								})
-							}
-						>
-							<Text style={styles.reviewButtonText}>후기 보기</Text>
-						</TouchableOpacity>
-					</View>
-				)}
-			</View>
+    navigation.navigate('ChatRoom', { roomId: res.data.chatRoomId });
+  };
 
-			{isOwner && (
-				<View style={styles.ownerNoticeBox}>
-					<Text style={styles.ownerNoticeText}>본인의 물품입니다.</Text>
-				</View>
-			)}
+  const isOwner = currentUser?.uid === item?.userId;
 
-			{!isOwner && (
-				<View style={styles.buttonGroup}>
-					<TouchableOpacity style={styles.buttonPrimary} onPress={handleRentalRequest} disabled={rentalRequested}>
-						<Text style={styles.buttonText}>{rentalRequested ? '요청됨!' : '대여 요청하기'}</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.buttonOutline} onPress={handleStartChat} disabled={loadingChat}>
-						<Text style={[styles.buttonText, { color: '#4CAF50' }]}>{loadingChat ? '채팅 연결 중...' : '채팅하기'}</Text>
-					</TouchableOpacity>
-				</View>
-			)}
+  if (!item) {
+    return <View style={styles.center}><Text>로딩 중...</Text></View>;
+  }
 
-			{isOwner && !editing && (
-				<View style={styles.ownerButtonGroup}>
-					<TouchableOpacity style={styles.buttonPrimary} onPress={() => setEditing(true)}>
-						<Text style={styles.buttonText}>상품 수정</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.buttonDanger} onPress={handleDelete}>
-						<Text style={styles.buttonText}>상품 삭제</Text>
-					</TouchableOpacity>
-				</View>
-			)}
+  return (
+    <ScrollView contentContainerStyle={styles.container} nestedScrollEnabled={true}>
+      <View style={styles.imageBox}>
+        {item.imageURL && (
+          <Image source={{ uri: item.imageURL }} style={styles.image} />
+        )}
+        <View style={styles.iconContainer}>
+          <TouchableOpacity onPress={toggleLike}>
+            <Text style={[styles.icon, liked && styles.liked]}>❤️</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
-			{editing && (
-				<EditItemForm
-					item={{ id: itemId, ...item }}
-					onCancel={() => setEditing(false)}
-					onSuccess={async () => {
-						setEditing(false);
-						await fetchItem();
-					}}
-				/>
-			)}
+      <View style={styles.card}>
+        <Text style={styles.title}>{item.name}</Text>
+        <Text style={styles.description}>{item.description}</Text>
 
-			<CommentSection itemId={itemId} currentUser={currentUser} />
-			<RentalHistory itemId={itemId} />
-		</ScrollView>
-	);
+        {item?.userId && (
+          <View style={styles.sellerRow}>
+            <Text style={styles.ownerText}>판매자: {itemOwnerName}</Text>
+            <TouchableOpacity
+              style={styles.reviewButton}
+              onPress={() =>
+                navigation.navigate('ReviewList', {
+                  userId: item.userId,
+                  type: 'received',
+                })
+              }
+            >
+              <Text style={styles.reviewButtonText}>후기 보기</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {isOwner && (
+        <View style={styles.ownerNoticeBox}>
+          <Text style={styles.ownerNoticeText}>본인의 물품입니다.</Text>
+        </View>
+      )}
+
+      {!isOwner && (
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity style={styles.buttonPrimary} onPress={handleRentalRequest} disabled={rentalRequested}>
+            <Text style={styles.buttonText}>{rentalRequested ? '요청됨!' : '대여 요청하기'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.buttonOutline} onPress={handleStartChat} disabled={loadingChat}>
+            <Text style={[styles.buttonText, { color: '#4CAF50' }]}>{loadingChat ? '채팅 연결 중...' : '채팅하기'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isOwner && !editing && (
+        <View style={styles.ownerButtonGroup}>
+          <TouchableOpacity style={styles.buttonPrimary} onPress={() => setEditing(true)}>
+            <Text style={styles.buttonText}>상품 수정</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.buttonDanger} onPress={handleDelete}>
+            <Text style={styles.buttonText}>상품 삭제</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {editing && (
+        <EditItemForm
+          item={{ id: itemId, ...item }}
+          onCancel={() => setEditing(false)}
+          onSuccess={async () => {
+            setEditing(false);
+            await fetchItem();
+          }}
+        />
+      )}
+
+      <CommentSection itemId={itemId} currentUser={currentUser} />
+      <RentalHistory itemId={itemId} />
+    </ScrollView>
+  );
 };
 
 export default ItemDetail;
 
-const { width } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
-	container: { padding: 16, backgroundColor: '#fff', gap: 20 },
-	center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-	imageBox: { position: 'relative', alignItems: 'center', marginBottom: 10 },
-	imageSlider: {
-		width: '100%',
-		height: 320,
-		borderRadius: 12,
-	},
-	image: {
-		width,
-		height: 320,
-		resizeMode: 'cover',
-	},
-	iconContainer: { position: 'absolute', top: 16, right: 16, flexDirection: 'row', gap: 12 },
-	icon: { fontSize: 24, opacity: 0.4 },
-	liked: { opacity: 1, color: '#4CAF50' },
-	card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, elevation: 2, gap: 10 },
-	title: { fontSize: 22, fontWeight: 'bold', color: '#222' },
-	description: { fontSize: 16, color: '#444', lineHeight: 22 },
-	ownerText: { fontSize: 14, color: '#888', fontStyle: 'italic' },
-	ownerNoticeBox: {
-		marginTop: 6,
-		paddingVertical: 10,
-		backgroundColor: '#f0f0f0',
-		borderRadius: 6,
-		alignItems: 'center',
-	},
-	ownerNoticeText: { color: '#555', fontSize: 14 },
-	sellerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-	reviewButton: { backgroundColor: '#007AFF', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6 },
-	reviewButtonText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
-	ownerButtonGroup: { gap: 10, marginBottom: 20 },
-	buttonGroup: { width: '100%' },
-	buttonPrimary: {
-		backgroundColor: '#4CAF50',
-		paddingVertical: 14,
-		borderRadius: 8,
-		alignItems: 'center',
-		marginBottom: 12,
-	},
-	buttonOutline: {
-		borderColor: '#4CAF50',
-		borderWidth: 1,
-		paddingVertical: 14,
-		borderRadius: 8,
-		alignItems: 'center',
-		marginBottom: 12,
-	},
-	buttonDanger: {
-		backgroundColor: '#C62828',
-		paddingVertical: 14,
-		borderRadius: 8,
-		alignItems: 'center',
-		marginBottom: 12,
-	},
-	buttonText: {
-		fontWeight: '600',
-		fontSize: 16,
-		color: '#fff',
-	},
+  container: {
+    padding: 16, 
+    backgroundColor: '#fff', 
+    gap: 20 
+  },
+  center: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  imageBox: { 
+    position: 'relative', 
+    alignItems: 'center', 
+    marginBottom: 10 
+  },
+  image: { 
+    width: '100%', 
+    height: 320, 
+    borderRadius: 12, 
+    resizeMode: 'cover' 
+  },
+  iconContainer: { 
+    position: 'absolute', 
+    top: 16, 
+    right: 16, 
+    flexDirection: 'row', 
+    gap: 12 
+  },
+  icon: { 
+    fontSize: 24, 
+    opacity: 0.4 
+  },
+  liked: { 
+    opacity: 1, 
+    color: '#4CAF50' 
+  },
+  card: { 
+    backgroundColor: '#fff',
+     borderRadius: 12, 
+     padding: 16, 
+     elevation: 2, 
+     gap: 10 
+    },
+  title: { 
+    fontSize: 22, 
+    fontWeight: 'bold', 
+    color: '#222' 
+  },
+  description: { 
+    fontSize: 16, 
+    color: '#444', 
+    lineHeight: 22 
+  },
+  ownerText: { 
+    fontSize: 14, 
+    color: '#888', 
+    fontStyle: 'italic' 
+  },
+  ownerNoticeBox: { 
+    marginTop: 6, 
+    paddingVertical: 10, 
+    backgroundColor: '#f0f0f0', 
+    borderRadius: 6, 
+    alignItems: 'center' 
+  },
+  ownerNoticeText: { 
+    color: '#555', 
+    fontSize: 14 
+  },
+  sellerRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between' 
+  },
+  reviewButton: { 
+    backgroundColor: '#007AFF', 
+    paddingVertical: 6, 
+    paddingHorizontal: 10, 
+    borderRadius: 6 
+  },
+  reviewButtonText: { 
+    color: '#fff', 
+    fontSize: 13, 
+    fontWeight: 'bold' 
+  },
+  ownerButtonGroup: { 
+    gap: 10, 
+    marginBottom: 20 
+  },
+  buttonGroup: { 
+    width: '100%' 
+  },
+  buttonPrimary: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  buttonOutline: {
+    borderColor: '#4CAF50',
+    borderWidth: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  buttonDanger: {
+    backgroundColor: '#C62828',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  buttonText: {
+    fontWeight: '600',
+    fontSize: 16,
+    color: '#fff',
+  },
 });

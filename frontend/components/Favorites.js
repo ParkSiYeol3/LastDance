@@ -22,13 +22,14 @@ const Favorites = ({ navigation }) => {
 
         const itemPromises = favSnapshot.docs.map(async (docSnap) => {
           const itemId = docSnap.data().itemId;
+          const createdAt = docSnap.data().createdAt?.toDate();
           const itemRef = doc(db, 'items', itemId);
           const itemSnap = await getDoc(itemRef);
-          return { id: itemId, ...itemSnap.data() };
+          return { id: itemId, ...itemSnap.data(), createdAt };
         });
 
         const items = await Promise.all(itemPromises);
-        setFavoriteItems(items.filter(Boolean)); // null 필터링
+        setFavoriteItems(items.filter(Boolean));
       } catch (err) {
         console.error('좋아요 목록 불러오기 실패:', err);
       }
@@ -41,34 +42,43 @@ const Favorites = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.header}>회원님이 주목하고 있는 상품</Text>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.cardList}>
         {favoriteItems.length === 0 ? (
           <Text style={styles.emptyText}>좋아요한 게시글이 없습니다.</Text>
         ) : (
           favoriteItems.map(item => (
             <TouchableOpacity
               key={item.id}
-              style={styles.itemContainer}
+              style={styles.card}
               onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
             >
               <Image
-                style={styles.itemImage}
+                style={styles.image}
                 source={
                   item.imageURL
                     ? { uri: item.imageURL }
                     : require('../assets/top.png') // 기본 이미지
                 }
               />
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemTitle} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.itemPrice}>{item.price ? `${item.price}원` : '가격 미정'}</Text>
+              <View style={styles.cardContent}>Add commentMore actions
+                <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.deposit}>{item.deposit ? `보증금 ${Number(item.deposit).toLocaleString()}원` : '보증금 미정'}</Text>
+                {item.createdAt && (
+                  <Text style={styles.time}>
+                    ❤️ {new Date(item.createdAt).toLocaleString('ko-KR', {
+                      year: '2-digit',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                )}
               </View>
-              <Text style={styles.heartIcon}>❤️</Text>
             </TouchableOpacity>
           ))
         )}
       </ScrollView>
-
       <View style={styles.footer}>
         <Footer navigation={navigation} />
       </View>
@@ -82,48 +92,55 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
     paddingTop: 40,
   },
   header: {
     fontSize: 22,
     fontWeight: 'bold',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   scrollView: {
-    marginBottom: 60,
+    paddingHorizontal: 16,
   },
-  itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-    paddingVertical: 15,
+  cardList: {
+    paddingBottom: 80,
+    gap: 16,
   },
-  itemImage: {
+  card: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  image: {
     width: 80,
     height: 80,
-    borderRadius: 8,
-    marginRight: 15,
+    borderRadius: 10,
+    marginRight: 14,
     backgroundColor: '#eee',
   },
-  itemDetails: {
+  cardContent: {
     flex: 1,
+    justifyContent: 'space-between',
   },
-  itemTitle: {
+  name: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#222',
   },
-  itemPrice: {
+  deposit: {
     fontSize: 15,
     fontWeight: 'bold',
-    marginTop: 4,
+    color: '#555',
   },
-  heartIcon: {
-    fontSize: 20,
-    color: '#FF4500',
-    marginLeft: 8,
+  time: {
+    fontSize: 12,
+    color: '#999',
   },
   emptyText: {
     textAlign: 'center',
@@ -134,6 +151,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
 		bottom: 0,
 		height:86,
-		width: '109%',
+		width: '100%',
   },
 });

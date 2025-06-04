@@ -61,10 +61,6 @@ export default function App() {
 					<Text style={styles.buttonText}>회원가입</Text>
 				</TouchableOpacity>
 			</View>
-
-			<View style={styles.container2}>
-				<Footer navigation={navigation} />
-			</View>
 		</View>
 	);
 }
