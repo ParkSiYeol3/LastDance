@@ -136,7 +136,7 @@ const AddItemScreen = ({ navigation }) => {
 	return (
 		<>
 			<ScrollView contentContainerStyle={styles.container}>
-				<Text style={styles.header}>상품 등록</Text>
+				<Text style={styles.header}>게시글 작성하기</Text>
 
 				<TextInput placeholder='상품명' style={styles.input} value={name} onChangeText={setName} />
 				<TextInput placeholder='설명' style={[styles.input, styles.textarea]} multiline value={description} onChangeText={setDescription} />
@@ -190,19 +190,94 @@ const AddItemScreen = ({ navigation }) => {
 export default AddItemScreen;
 
 const styles = StyleSheet.create({
-	container: { padding: 20, backgroundColor: '#fff' },
-	header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-	input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 10 },
-	textarea: { height: 100, textAlignVertical: 'top' },
-	categoryContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 },
-	categoryBtn: { borderWidth: 1, borderColor: '#ccc', borderRadius: 10, padding: 10, margin: 5 },
-	categoryText: { fontSize: 14, color: '#333' },
-	imageButtonRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-	galleryBtn: { backgroundColor: '#4A90E2', padding: 12, borderRadius: 8, flex: 1, marginRight: 8, alignItems: 'center' },
-	cameraBtn: { backgroundColor: '#111', padding: 12, borderRadius: 8, flex: 1, alignItems: 'center' },
-	image: { width: 100, height: 100, borderRadius: 10 },
-	deleteBadge: { position: 'absolute', top: -6, right: -6, backgroundColor: 'red', borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' },
-	submitBtn: { backgroundColor: '#31C585', padding: 16, borderRadius: 10, alignItems: 'center', marginTop: 10 },
-	submitText: { color: '#fff', fontWeight: 'bold' },
-	footer: { position: 'absolute', bottom: 0, width: '100%', height: 85 },
+	container: { 
+		padding: 20, 
+		backgroundColor: '#fff' 
+	},
+	header: { 
+		fontSize: 24, 
+		fontWeight: 'bold', 
+		marginBottom: 20, 
+		textAlign: 'center' 
+	},
+	input: { 
+		borderWidth: 1, 
+		borderColor: '#ccc', 
+		borderRadius: 8, 
+		padding: 10, 
+		marginBottom: 10 
+	},
+	textarea: { 
+		height: 100, 
+		textAlignVertical: 'top' 
+	},
+	categoryContainer: { 
+		flexDirection: 'row', 
+		flexWrap: 'wrap', 
+		marginBottom: 12 
+	},
+	categoryBtn: { 
+		borderWidth: 1, 
+		borderColor: '#ccc', 
+		borderRadius: 10, 
+		padding: 10, 
+		margin: 9, 
+	},
+	categoryText: { 
+		fontSize: 14, 
+		color: '#333' 
+	},
+	imageButtonRow: { 
+		flexDirection: 'row', 
+		justifyContent: 'space-between', 
+		marginBottom: 16 
+	},
+	galleryBtn: { 
+		backgroundColor: '#4A90E2', 
+		padding: 12, 
+		borderRadius: 8, 
+		flex: 1, 
+		marginRight: 8, 
+		alignItems: 'center' 
+	},
+	cameraBtn: { 
+		backgroundColor: '#111', 
+		padding: 12, 
+		borderRadius: 8, 
+		flex: 1, 
+		alignItems: 'center' 
+	},
+	image: { 
+		width: 100, 
+		height: 100, 
+		borderRadius: 10 
+	},
+	deleteBadge: { 
+		position: 'absolute', 
+		top: -6, 
+		right: -6, 
+		backgroundColor: 'red', 
+		borderRadius: 10, 
+		width: 20, 
+		height: 20, 
+		justifyContent: 'center', 
+		alignItems: 'center' 
+	},
+	submitBtn: { 
+		backgroundColor: '#31C585', 
+		padding: 16, 
+		borderRadius: 10, 
+		alignItems: 'center', 
+		marginTop: 10 
+	},
+	submitText: { 
+		color: '#fff', 
+		fontWeight: 'bold' 
+	},
+	footer: { 
+		position: 'absolute', 
+		bottom: 0, 
+		width: '100%', 
+		height: 83 
+	},
 });

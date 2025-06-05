@@ -314,5 +314,10 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 		alignSelf: 'flex-start',
 	},
-	footer: { position: 'absolute', bottom: 0, height: 85, width: '100%' },
+	footer: {
+    	position: 'absolute',
+    	bottom: 0,
+    	height: 83,
+    	width: '100%',
+  	},
 });

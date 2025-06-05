@@ -9,6 +9,10 @@ import CommentSection from './CommentSection';
 import RentalHistory from './RentalHistory';
 import EditItemForm from './EditItemForm';
 import { getAuth } from 'firebase/auth';
+import * as Location from 'expo-location';
+import Footer from './Footer';
+import BlackHeart from '../assets/blackHeart.png';
+import BIN_blackHeart from '../assets/BIN_blackHeart.png'; 
 
 const ItemDetail = () => {
 	const route = useRoute();
@@ -23,6 +27,8 @@ const ItemDetail = () => {
 	const [editing, setEditing] = useState(false);
 	const [loadingChat, setLoadingChat] = useState(false);
 	const [liked, setLiked] = useState(false);
+	const [likeCount, setLikeCount] = useState(0);
+	const [distanceFromMe, setDistanceFromMe] = useState(null);
 
 	useEffect(() => {
 		if (!itemId) {
@@ -32,6 +38,19 @@ const ItemDetail = () => {
 		}
 		loadUserAndItem(); // 내부에서 logRecentView 처리
 	}, [itemId]);
+
+	const getDistance = (lat1, lon1, lat2, lon2) => {
+		const R = 6371;
+		const dLat = ((lat2 - lat1) * Math.PI) / 180;
+		const dLon = ((lon2 - lon1) * Math.PI) / 180;
+		const a =
+			Math.sin(dLat / 2) ** 2 +
+			Math.cos((lat1 * Math.PI) / 180) *
+				Math.cos((lat2 * Math.PI) / 180) *
+				Math.sin(dLon / 2) ** 2;
+		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+		return R * c;
+	};
 
 	const loadUserAndItem = async () => {
 		try {
@@ -49,9 +68,25 @@ const ItemDetail = () => {
 			console.log('✅ user 로드 완료:', user.uid);
 
 			await fetchItem();
-			await fetchItemStatus(user.uid);
-			await logRecentView(user.uid);
-			await checkExistingRequest(user.uid); // 🔁 여기에 로그 추가됨
+			if (user?.uid) {
+				await fetchItemStatus(user.uid);
+				await logRecentView(user.uid);
+			}
+
+			// 🧭 내 위치와 상품 거리 계산
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status === 'granted') {
+				const current = await Location.getCurrentPositionAsync({});
+					if (item?.latitude && item?.longitude) {
+						const dist = getDistance(
+							current.coords.latitude,
+							current.coords.longitude,
+							item.latitude,
+							item.longitude
+						);
+						setDistanceFromMe(dist.toFixed(1)); // 1.8km 식으로
+					}
+			}
 		} catch (error) {
 			console.error('유저 정보 로딩 오류:', error);
 		}
@@ -117,6 +152,7 @@ const ItemDetail = () => {
 			if (itemSnap.exists()) {
 				const likedBy = itemSnap.data().likedBy || [];
 				setLiked(likedBy.includes(userId));
+				setLikeCount(likedBy.length);
 			} else {
 				setLiked(false);
 			}
@@ -176,6 +212,7 @@ const ItemDetail = () => {
 
 			// 상태 반영
 			setLiked(!isLiked);
+			setLikeCount(updatedLikes.length); 
 		} catch (err) {
 			console.error('좋아요 처리 실패:', err);
 		}
@@ -272,6 +309,7 @@ const ItemDetail = () => {
 	}
 
 	return (
+		<>
 		<ScrollView contentContainerStyle={styles.container} nestedScrollEnabled={true}>
 			Add commentMore actions
 			<View style={styles.imageBox}>
@@ -284,16 +322,19 @@ const ItemDetail = () => {
 				) : (
 					item.imageURL && <Image source={{ uri: item.imageURL }} style={styles.image} />
 				)}
-				<View style={styles.iconContainer}>
-					<TouchableOpacity onPress={toggleLike}>
-						<Text style={[styles.icon, liked && styles.liked]}>❤️</Text>
-					</TouchableOpacity>
-				</View>
-				Add commentMore actions
 			</View>
 			<View style={styles.card}>
 				<Text style={styles.title}>{item.name}</Text>
 				<Text style={styles.description}>{item.description}</Text>
+				{distanceFromMe && (
+  					<Text style={styles.distanceText}>👣 회원님의 위치로부터 약 {distanceFromMe}km 떨어져 있습니다.</Text>
+				)}
+				<View style={styles.iconContainer}>
+					<TouchableOpacity onPress={toggleLike}>
+						<Image source={liked ? BlackHeart : BIN_blackHeart } style={styles.heartIcon} />
+						<Text style={styles.likeCount}>{likeCount}</Text>
+					</TouchableOpacity>
+				</View>
 
 				{item?.userId && (
 					<View style={styles.sellerRow}>
@@ -350,6 +391,11 @@ const ItemDetail = () => {
 			<CommentSection itemId={itemId} currentUser={currentUser} />
 			<RentalHistory itemId={itemId} />
 		</ScrollView>
+
+		<View style={styles.footer}>
+			<Footer navigation={navigation} />
+		</View>
+	</>	
 	);
 };
 export default ItemDetail;
@@ -357,9 +403,21 @@ export default ItemDetail;
 const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
-	container: { padding: 16, backgroundColor: '#fff', gap: 20 },
-	center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-	imageBox: { position: 'relative', alignItems: 'center', marginBottom: 10 },
+	container: { 
+		padding: 16, 
+		backgroundColor: '#fff', 
+		gap: 20 
+	},
+	center: { 
+		flex: 1, 
+		justifyContent: 'center', 
+		alignItems: 'center' 
+	},
+	imageBox: { 
+		position: 'relative', 
+		alignItems: 'center', 
+		marginBottom: 10 
+	},
 	imageSlider: {
 		width: '100%',
 		height: 320,
@@ -379,13 +437,58 @@ const styles = StyleSheet.create({
 		color: '#888',
 		fontStyle: 'italic',
 	},
-	iconContainer: { position: 'absolute', top: 16, right: 16, flexDirection: 'row', gap: 12 },
-	icon: { fontSize: 24, opacity: 0.4 },
-	liked: { opacity: 1, color: '#4CAF50' },
-	card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, elevation: 2, gap: 10 },
-	title: { fontSize: 22, fontWeight: 'bold', color: '#222' },
-	description: { fontSize: 16, color: '#444', lineHeight: 22 },
-	ownerText: { fontSize: 14, color: '#888', fontStyle: 'italic' },
+	iconContainer: { 
+		position: 'absolute', 
+		top: 16, 
+		right: 16, 
+		flexDirection: 'row', 
+		gap: 12 
+	},
+	icon: { 
+		fontSize: 24, 
+		opacity: 0.4 
+	},
+	liked: { 
+		opacity: 1, 
+		color: '#4CAF50' 
+	},
+	heartIcon: {
+  		width: 28,
+  		height: 28,
+  		tintColor: '#000',
+	},
+	likeCount: {
+  		marginLeft: 9.6,
+  		fontSize: 16,
+  		color: '#444',
+	},
+	card: { 
+		backgroundColor: '#fff', 
+		borderRadius: 12, 
+		padding: 16, 
+		elevation: 2, 
+		gap: 10 
+	},
+	title: { 
+		fontSize: 22, 
+		fontWeight: 'bold', 
+		color: '#222' 
+	},
+	description: { 
+		fontSize: 16, 
+		color: '#444', 
+		lineHeight: 22 
+	},
+	distanceText: {
+		marginTop: 2,
+		fontSize: 14,
+		color: '#777',
+	},
+	ownerText: { 
+		fontSize: 14, 
+		color: '#888', 
+		fontStyle: 'italic' 
+	},
 	ownerNoticeBox: {
 		marginTop: 6,
 		paddingVertical: 10,
@@ -393,12 +496,33 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 		alignItems: 'center',
 	},
-	ownerNoticeText: { color: '#555', fontSize: 14 },
-	sellerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-	reviewButton: { backgroundColor: '#007AFF', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6 },
-	reviewButtonText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
-	ownerButtonGroup: { gap: 10, marginBottom: 20 },
-	buttonGroup: { width: '100%' },
+	ownerNoticeText: { 
+		color: '#555', 
+		fontSize: 14 
+	},
+	sellerRow: { 
+		flexDirection: 'row', 
+		alignItems: 'center', 
+		justifyContent: 'space-between' 
+	},
+	reviewButton: { 
+		backgroundColor: '#007AFF', 
+		paddingVertical: 6, 
+		paddingHorizontal: 10, 
+		borderRadius: 6 
+	},
+	reviewButtonText: { 
+		color: '#fff', 
+		fontSize: 13, 
+		fontWeight: 'bold' 
+	},
+	ownerButtonGroup: { 
+		gap: 10, 
+		marginBottom: 20 
+	},
+	buttonGroup: { 
+		width: '100%' 
+	},
 	buttonPrimary: {
 		backgroundColor: '#4CAF50',
 		paddingVertical: 14,
@@ -425,5 +549,11 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		fontSize: 16,
 		color: '#fff',
+	},
+	footer: {
+  		position: 'absolute',
+  		bottom: 0,
+  		width: '100%',
+  		height: 83,
 	},
 });

@@ -4,7 +4,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../firebase-config';
 import Footer from './Footer';
-
+import BlackHeart from '../assets/blackHeart.png';
 const Favorites = ({ navigation }) => {
   const [favoriteItems, setFavoriteItems] = useState([]);
 
@@ -60,19 +60,22 @@ const Favorites = ({ navigation }) => {
                     : require('../assets/top.png') // 기본 이미지
                 }
               />
-              <View style={styles.cardContent}>Add commentMore actions
+              <View style={styles.cardContent}>
                 <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
                 <Text style={styles.deposit}>{item.deposit ? `보증금 ${Number(item.deposit).toLocaleString()}원` : '보증금 미정'}</Text>
                 {item.createdAt && (
-                  <Text style={styles.time}>
-                    ❤️ {new Date(item.createdAt).toLocaleString('ko-KR', {
-                      year: '2-digit',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
+                  <View style={styles.likeRow}>
+                    <Image source={BlackHeart} style={styles.heartIcon} />
+                    <Text style={styles.time}>
+                      {new Date(item.createdAt).toLocaleString('ko-KR', {
+                        year: '2-digit',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                  </View>
                 )}
               </View>
             </TouchableOpacity>
@@ -137,6 +140,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
     color: '#555',
+  },
+  likeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 4,
+  },
+  heartIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#000',
   },
   time: {
     fontSize: 12,

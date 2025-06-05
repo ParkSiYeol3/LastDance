@@ -5,6 +5,8 @@ import { db } from '../firebase-config';
 import { getAuth } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import Footer from './Footer';
+import blackHeart from '../assets/blackHeart.png'; // 찜한 상태
+import BIN_blackHeart from '../assets/BIN_blackHeart.png'; // 찜 안 한 상태
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -96,7 +98,7 @@ const Home = () => {
           <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
           <View style={styles.metaRow}>
             <TouchableOpacity onPress={() => toggleLikeFromHome(item.id, item.likedBy || [], isLiked)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Image source={isLiked ? require('../assets/heart.png') : require('../assets/BIN_heart.png')} style={styles.heartIcon} />
+              <Image source={isLiked ? blackHeart : BIN_blackHeart} style={styles.heartIcon} />
             </TouchableOpacity>
             <Text style={styles.metaText}>{item.likedBy?.length || 0}</Text>
             <Image source={require('../assets/star.png')} style={styles.starIcon} />
@@ -259,7 +261,7 @@ const styles = StyleSheet.create({
 	heartIcon: {
 		width: 16,
 		height: 16,
-		tintColor: '#FF5A5F',
+		tintColor: '#000', 
 	},
 	starIcon: {
 		width: 14,

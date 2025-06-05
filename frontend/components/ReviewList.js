@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity }
 import { useRoute } from '@react-navigation/native';
 
 
-const API_URL = 'http://172.30.1.6:3000';
+const API_URL = 'http://10.20.64.23:3000';
 
 
 export default function ReviewList() {

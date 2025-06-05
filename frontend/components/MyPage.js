@@ -111,7 +111,7 @@ const MyPage = ({ navigation }) => {
 			<ScrollView contentContainerStyle={styles.content}>
 				<View style={styles.menuBox}>
 					<MenuItem label='🧾 보증금 결제 내역' onPress={() => navigation.navigate('SalesHistory')} />
-					<MenuItem label='♥️ 좋아요' onPress={() => navigation.navigate('Favorites')} />
+					<MenuItem label='♥️ 관심 상품' onPress={() => navigation.navigate('Favorites')} />
 					<MenuItem label='🕒 최근 본 상품' onPress={() => navigation.navigate('RecentViews')} />
 					<MenuItem label='📢 공지사항' onPress={() => navigation.navigate('Notice')} />
 					<MenuItem label='📩 승인 요청 내역' onPress={() => navigation.navigate('RentalRequests')} />
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
 	footer: {
 		position: 'absolute',
 		bottom: 0,
-		height: 85,
+		height: 83,
 		width: '100%',
 	},
 	profileBox: {
