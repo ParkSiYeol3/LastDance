@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const { doc, getDoc, addDoc, collection, serverTimestamp, query, where, onSnapshot, deleteDoc, updateDoc, orderBy, getDocs } = require('firebase-admin/firestore');
 const axios = require('axios');
 
-const API_URL = process.env.API_URL || 'http://172.30.1.6:3000';
+const API_URL = process.env.API_URL || 'http://10.20.64.23:3000';
 
 
 //채팅방 생성
