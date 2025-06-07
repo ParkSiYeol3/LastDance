@@ -5,7 +5,7 @@ import * as Progress from 'react-native-progress';
 import Footer from '../components/Footer';
 
 
-const API_URL = 'http://10.20.64.23:3000';
+const API_URL = 'http://192.168.219.42:3000';
 
 
 

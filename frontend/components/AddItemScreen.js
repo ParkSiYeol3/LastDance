@@ -1,6 +1,4 @@
-// ✅ Cloudinary 연동된 최종 AddItemScreen.js
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Image, Alert, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import Footer from './Footer';
 import * as Location from 'expo-location';
@@ -18,7 +16,40 @@ const AddItemScreen = ({ navigation }) => {
 	const [imageList, setImageList] = useState([]); // { url, public_id }
 	const [uploading, setUploading] = useState(false);
 	const [category, setCategory] = useState('');
+	const [address, setAddress] = useState('');
 
+	useEffect(() => {
+		const loadAddress = async () => {
+			try {
+				const { status } = await Location.requestForegroundPermissionsAsync();
+      			if (status !== 'granted') return;
+
+      			const location = await Location.getCurrentPositionAsync({});
+      			await fetchAddress(location.coords);
+    		} catch (err) {
+      		console.error('초기 위치 가져오기 실패:', err);
+    		}
+  		};
+
+  		loadAddress();
+	}, []);
+
+	const fetchAddress = async (coords) => {
+		try {
+			const [place] = await Location.reverseGeocodeAsync({
+      			latitude: coords.latitude,
+      			longitude: coords.longitude,
+    		});
+
+    		if (place) {
+				const fullAddress = `${place.region ?? ''} ${place.city ?? ''} ${place.district ?? ''} ${place.street ?? ''}`.trim();
+      			setAddress(fullAddress);
+    		}
+  		} catch (err) {
+    		console.error('주소 변환 실패:', err);
+  		}
+	};
+	
 	const categoryStyles = {
 		상의: { icon: '👕', color: '#31C585' },
 		가방: { icon: '👜', color: '#9B59B6' },
@@ -121,6 +152,7 @@ const AddItemScreen = ({ navigation }) => {
 				imageURLs: imageList.map((img) => img.url),
 				latitude: location.coords.latitude,
 				longitude: location.coords.longitude,
+				address,
 				timestamp: serverTimestamp(),
 			});
 
@@ -135,7 +167,7 @@ const AddItemScreen = ({ navigation }) => {
 
 	return (
 		<>
-			<ScrollView contentContainerStyle={styles.container}>
+			<ScrollView contentContainerStyle={[styles.container, { paddingBottom: 120 }]}>
 				<Text style={styles.header}>게시글 작성하기</Text>
 
 				<TextInput placeholder='상품명' style={styles.input} value={name} onChangeText={setName} />
@@ -175,8 +207,18 @@ const AddItemScreen = ({ navigation }) => {
 					))}
 				</ScrollView>
 
+				<Text style={styles.hintText}>
+  					✅ 등록 전 확인해주세요! 이미지, 카테고리, 설명을 모두 입력하셨나요?
+				</Text>
+				
+				{address ? (
+					<Text style={styles.addressText}>🚩 등록 위치: {address}</Text>
+				) : (
+  					<Text style={styles.addressText}>🚩 위치 불러오는 중...</Text>
+				)}
+
 				<TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={uploading}>
-					<Text style={styles.submitText}>{uploading ? '등록 중...' : '상품 등록'}</Text>
+ 					<Text style={styles.submitText}>{uploading ? '등록 중...' : '상품 등록'}</Text>
 				</TouchableOpacity>
 			</ScrollView>
 
@@ -270,10 +312,24 @@ const styles = StyleSheet.create({
 		alignItems: 'center', 
 		marginTop: 10 
 	},
+	addressText: {
+  		fontSize: 14,
+  		color: '#666',
+  		marginTop: 10,
+  		marginBottom: 10,
+  		textAlign: 'center',
+	},
 	submitText: { 
 		color: '#fff', 
 		fontWeight: 'bold' 
 	},
+	hintText: {
+  		fontSize: 12,
+  		color: '#888',
+  		marginTop: 14,
+  		marginBottom: 6,
+  		textAlign: 'center',
+},
 	footer: { 
 		position: 'absolute', 
 		bottom: 0, 
