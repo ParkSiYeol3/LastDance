@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, StatusBar, Alert } from 'react-native';
-import Footer from '../components/Footer';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, StatusBar, Alert, Image } from 'react-native';
 import { auth } from '../firebase-config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -46,6 +45,10 @@ export default function App() {
 			<StatusBar barStyle='dark-content' />
 
 			<View style={styles.container1}>
+				<View style={styles.header}>
+					<Image source={require('../assets/Logo.png')} style={styles.logo} />
+				</View>
+
 				<TextInput style={styles.input} placeholder='Username or E-mail' value={email} onChangeText={setEmail} autoCapitalize='none' keyboardType='email-address' />
 				<View>아이디 또는 비밀번호를 찾으시겠습니까?</View>
 
@@ -78,6 +81,12 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		display: 'flex',
 		marginBottom: 50,
+	},
+	logo: {
+  		width: 150,
+  		height: 150,
+  		resizeMode: 'contain',
+  		marginVertical: 20,
 	},
 	container2: {
 		position: 'absolute',

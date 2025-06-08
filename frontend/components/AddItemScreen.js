@@ -52,9 +52,9 @@ const AddItemScreen = ({ navigation }) => {
 	
 	const categoryStyles = {
 		상의: { icon: '👕', color: '#31C585' },
-		가방: { icon: '👜', color: '#9B59B6' },
-		하의: { icon: '👖', color: '#4A90E2' },
-		신발: { icon: '👟', color: '#FFA500' },
+		하의: { icon: '👖', color: '#31C585' },
+		신발: { icon: '👟', color: '#31C585' },
+		가방: { icon: '👜', color: '#31C585' },
 	};
 
 	const requestPermission = async (type) => {
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   		marginTop: 14,
   		marginBottom: 6,
   		textAlign: 'center',
-},
+	},
 	footer: { 
 		position: 'absolute', 
 		bottom: 0, 

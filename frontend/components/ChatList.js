@@ -1,6 +1,6 @@
 // components/ChatList.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image } from 'react-native';
 import Footer from '../components/Footer';
 import { Dimensions } from 'react-native';
 import ChatListItem from './ChatListItem';
@@ -123,8 +123,12 @@ const ChatList = () => {
 
 	return (
 		<View style={styles.wrapper}>
+			<View style={styles.header}>
+    			<Image source={require('../assets/Logo.png')} style={styles.logo} />
+    			<Text style={styles.title}>채팅</Text>
+  			</View>
+
 			<View style={styles.container}>
-				<Text style={styles.title}>채팅 목록</Text>
 				<FlatList data={chatRooms} keyExtractor={(item) => item.id} renderItem={renderItem} ListEmptyComponent={<Text>채팅방이 없습니다.</Text>} />
 			</View>
 
@@ -148,6 +152,17 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 100,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+    marginLeft: 10,
+  },
+  logo: {
+    width: 70,
+    height: 70,
+    resizeMode: 'contain',
+  },
   footer: { 
     position: 'absolute', 
     bottom: 0, 
@@ -155,9 +170,10 @@ const styles = StyleSheet.create({
 	height: 83,
   },
   title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    marginBottom: 20 
+    fontSize: 20, 
+    fontWeight: 'bold',
+	color: '#31c585',
+    marginBottom: 5, 
   },
   ratingText: { 
     fontSize: 14, 

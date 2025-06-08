@@ -111,8 +111,13 @@ const Home = () => {
 
 	return (
 		<View style={styles.screen}>
+			<View style={styles.header}>
+        		<Image source={require('../assets/Logo.png')} style={styles.logo} />
+        		<Text style={styles.appName}>이거옷대여?</Text>
+      		</View>
+
 			<View style={styles.searchContainer}>
-				<TextInput style={styles.input} placeholder='검색어를 입력하세요' value={search} onChangeText={setSearch} />
+				<TextInput style={styles.input} placeholder='검색어를 입력하세요!' value={search} onChangeText={setSearch} />
 				<TouchableOpacity style={styles.searchButton}>
 					<Image source={require('../assets/search.png')} style={styles.searchIcon} />
 				</TouchableOpacity>
@@ -168,6 +173,24 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingTop: 16,
 	},
+	header: {
+    	flexDirection: 'row',
+    	alignItems: 'center',
+    	backgroundColor: '#fff',
+    	borderBottomColor: '#eee',
+  	},
+  	logo: {
+    	width: 70,
+    	height: 70,
+    	resizeMode: 'contain',
+  	},
+  	appName: {
+    	fontSize: 18,
+    	fontWeight: 'bold',
+		color: '#31c585',
+    	marginLeft: 5,
+		marginBottom: 5,
+  	},
 	searchContainer: {
 		flexDirection: 'row',
 		marginBottom: 16,

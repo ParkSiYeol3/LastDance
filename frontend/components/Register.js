@@ -3,8 +3,8 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, StatusBar, Alert }
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase-config';
-import Footer from '../components/Footer';
 import { useNavigation } from '@react-navigation/native';
+
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -48,11 +48,12 @@ export default function Register() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.BackButton}>
+        <Text style={styles.BackText}>‹ 로그인</Text>
+      </TouchableOpacity>
+      
+      <Text style={styles.title}>회원가입</Text>
 
-      {/* 타이틀 */}
-      <Text style={styles.title}>Register</Text>
-
-      {/* 입력 필드들 */}
       <TextInput style={styles.input} placeholder="Username or E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
       <TextInput style={[styles.input, styles.passwordInput]} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
       <TextInput style={styles.input} placeholder="Phone Number (선택)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
@@ -60,15 +61,10 @@ export default function Register() {
       <TextInput style={styles.input} placeholder="Address" value={address} onChangeText={setAddress} />
       <TextInput style={styles.input} placeholder="Nick Name" value={nickname} onChangeText={setNickname} />
 
-      {/* 회원가입 버튼 */}
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>회원가입</Text>
+        <Text style={styles.buttonText}>완료</Text>
       </TouchableOpacity>
-
-      <View style={styles.container2}>
-              {/* 푸터바가 들어갈 공간 */}
-              <Footer navigation={navigation} />
-      </View>
+      
     </View>
   );
 }
@@ -80,6 +76,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+  },
+  BackButton: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    marginLeft: 10,
+  },
+  BackText: {
+    fontSize: 16, 
+    color: '#31c585', 
+    fontWeight: 'bold'
   },
   title: {
     fontSize: 24,

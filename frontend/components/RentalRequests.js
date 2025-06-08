@@ -7,6 +7,7 @@ import { collection, query, where, getDocs, doc, getDoc, updateDoc, orderBy } fr
 import { db, API_URL } from '../firebase-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth } from 'firebase/auth'; // ✅ Firebase Auth 추가
+import Footer from './Footer';
 
 const RentalRequests = () => {
 	const [requests, setRequests] = useState([]);
@@ -103,6 +104,7 @@ const RentalRequests = () => {
 	};
 
 	return (
+		<>
 		<ScrollView contentContainerStyle={styles.container}>
 			<Text style={styles.title}>📩 받은 대여 요청</Text>
 			{requests.length === 0 ? (
@@ -124,6 +126,11 @@ const RentalRequests = () => {
 				))
 			)}
 		</ScrollView>
+
+		<View style={styles.footer}>
+			<Footer navigation={navigation} />
+		</View>
+		</>
 	);
 };
 
@@ -156,5 +163,11 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		marginTop: 10,
+	},
+	footer: {
+		position: 'absolute',
+		bottom: 0,
+		height: 83,
+		width: '100%',
 	},
 });

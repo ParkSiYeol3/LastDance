@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, FlatList, Text, TouchableOpacity, Image, StyleSheet, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import Footer from './Footer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -513,6 +514,10 @@ const ChatRoom = ({ route, navigation }) => {
 					<Text style={styles.sendText}>전송</Text>
 				</TouchableOpacity>
 			</View>
+
+			<View style={styles.footer}>
+				<Footer navigation={navigation} />
+			</View>
 		</View>
 	);
 };
@@ -682,5 +687,11 @@ const styles = StyleSheet.create({
 	modalButtonText: {
 		color: '#fff',
 		fontWeight: 'bold',
+	},
+	footer: { 
+		position: 'absolute', 
+		bottom: 0, 
+		width: '100%', 
+		height: 83 
 	},
 });

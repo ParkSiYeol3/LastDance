@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import Footer from './Footer';
 
-
-const API_URL = 'http://192.168.219.42:3000';
+const API_URL = 'http://172.30.1.11:3000';
 
 
 export default function ReviewList() {
 	const route = useRoute();
+	const navigation = useNavigation();
 	const params = route?.params || {};
 	const userId = params.userId || '';
 	const type = params.type || 'received';
@@ -122,6 +123,11 @@ export default function ReviewList() {
 			{!reviews?.length && <Text style={{ textAlign: 'center', marginTop: 20, color: '#888' }}>작성된 리뷰가 없습니다.</Text>}
 
 			<FlatList data={getSortedReviews()} keyExtractor={(item) => item.id} renderItem={renderItem} contentContainerStyle={{ paddingBottom: 50 }} />
+			
+			<View style={styles.footer}>
+				<Footer navigation={navigation}/>
+			</View>
+
 		</View>
 	);
 }
@@ -211,5 +217,11 @@ const styles = StyleSheet.create({
 		fontWeight: 'bold',
 		color: '#555',
 		marginTop: 6,
+	},
+	footer: {
+		position: 'absolute',
+		bottom: 0,
+		height: 83,
+		width: '109%',
 	},
 });

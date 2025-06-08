@@ -103,7 +103,7 @@ export default function MapScreen() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.searchContainer}>
-				<TextInput placeholder='상품 이름 검색' style={styles.searchInput} value={searchQuery} onChangeText={setSearchQuery} />
+				<TextInput placeholder='상품 이름을 검색하세요!' style={styles.searchInput} value={searchQuery} onChangeText={setSearchQuery} />
 			</View>
 
 			<ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
@@ -204,12 +204,21 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1 },
-	map: { width: Dimensions.get('window').width, height: Dimensions.get('window').height },
-	loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+	container: { 
+		flex: 1 
+	},
+	map: { 
+		width: Dimensions.get('window').width, 
+		height: Dimensions.get('window').height 
+	},
+	loadingContainer: { 
+		flex: 1, 
+		justifyContent: 'center', 
+		alignItems: 'center' 
+	},
 	searchContainer: {
 		position: 'absolute',
-		top: 50,
+		top: 20,
 		left: 20,
 		right: 20,
 		zIndex: 5,
@@ -219,15 +228,18 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		elevation: 4,
 	},
-	searchInput: { fontSize: 16 },
+	searchInput: { 
+		fontSize: 16 
+	},
 	categoryContainer: {
 		position: 'absolute',
-		top: 100,
+		top: 70,
 		left: 0,
 		right: 0,
 		paddingHorizontal: 10,
 		paddingVertical: 6,
 		zIndex: 5,
+		marginTop: 10,
 	},
 	categoryButton: {
 		paddingHorizontal: 14,
@@ -236,12 +248,21 @@ const styles = StyleSheet.create({
 		backgroundColor: '#f0f0f0',
 		marginRight: 8,
 	},
-	categoryButtonSelected: { backgroundColor: '#31c585' },
-	categoryText: { fontSize: 14, color: '#333' },
-	categoryTextSelected: { fontSize: 14, color: '#fff', fontWeight: 'bold' },
+	categoryButtonSelected: { 
+		backgroundColor: '#31c585' 
+	},
+	categoryText: { 
+		fontSize: 14, 
+		color: '#333' 
+	},
+	categoryTextSelected: { 
+		fontSize: 14, 
+		color: '#fff', 
+		fontWeight: 'bold' 
+	},
 	sortContainer: {
 		position: 'absolute',
-		top: 150,
+		top: 125,
 		left: 10,
 		right: 10,
 		flexDirection: 'row',
@@ -255,9 +276,18 @@ const styles = StyleSheet.create({
 		backgroundColor: '#eee',
 		borderRadius: 8,
 	},
-	sortButtonSelected: { backgroundColor: '#31c585' },
-	sortText: { fontSize: 13, color: '#333' },
-	sortTextSelected: { fontSize: 13, color: '#fff', fontWeight: 'bold' },
+	sortButtonSelected: { 
+		backgroundColor: '#31c585' 
+	},
+	sortText: { 
+		fontSize: 13, 
+		color: '#333' 
+	},
+	sortTextSelected: { 
+		fontSize: 13, 
+		color: '#fff', 
+		fontWeight: 'bold' 
+	},
 	locationButton: {
 		marginLeft: 'auto',
 		backgroundColor: '#31c585',
@@ -265,7 +295,11 @@ const styles = StyleSheet.create({
 		paddingVertical: 6,
 		borderRadius: 8,
 	},
-	locationButtonText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
+	locationButtonText: { 
+		color: '#fff', 
+		fontSize: 13, 
+		fontWeight: 'bold' 
+	},
 	searchResultBox: {
 		position: 'absolute',
 		top: 200,
@@ -284,10 +318,23 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: '#eee',
 	},
-	searchResultText: { fontSize: 15, color: '#333' },
-	searchResultSubText: { fontSize: 12, color: '#888', marginTop: 2 },
-	noResultContainer: { padding: 10, alignItems: 'center' },
-	noResultText: { fontSize: 14, color: '#888' },
+	searchResultText: { 
+		fontSize: 15, 
+		color: '#333' 
+	},
+	searchResultSubText: { 
+		fontSize: 12, 
+		color: '#888', 
+		marginTop: 2 
+	},
+	noResultContainer: { 
+		padding: 10, 
+		alignItems: 'center' 
+	},
+	noResultText: { 
+		fontSize: 14, 
+		color: '#888' 
+	},
 	bottomCard: {
 		position: 'absolute',
 		bottom: 90,

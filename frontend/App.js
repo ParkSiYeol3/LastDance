@@ -44,6 +44,7 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminReports from './components/AdminReports';
 import StainDetector from './components/StainDetector';
 import RecentViews from './components/RecentViews';
+import ReviewListTabs from './components/ReviewListTabs';
 
 const Stack = createStackNavigator();
 
@@ -108,6 +109,7 @@ export default function App() {
 					<Stack.Screen name='RentalRequests' component={RentalRequests} options={{ headerShown: false }} />
 					<Stack.Screen name='AdminDashboard' component={AdminDashboard} options={{ title: '감정 통계', headerShown: false }} />
 					<Stack.Screen name='StainDetector' component={StainDetector} options={{ headerShown: false }} />
+					<Stack.Screen name="ReviewListTabs" component={ReviewListTabs} options={{ headerShown: false }} />
 				</Stack.Navigator>
 			</NavigationContainer>
 		</StripeProvider>

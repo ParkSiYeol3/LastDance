@@ -162,6 +162,7 @@ exports.getWrittenReviews = async (req, res) => {
 // 평균 별점 계산
 exports.getAverageRating = async (req, res) => {
   const targetUserId = req.params.userId;
+  console.log('[평균 별점 요청]', targetUserId); //
 
   try {
     const snapshot = await db
