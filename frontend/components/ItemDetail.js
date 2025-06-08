@@ -12,7 +12,7 @@ import { getAuth } from 'firebase/auth';
 import * as Location from 'expo-location';
 import Footer from './Footer';
 import BlackHeart from '../assets/blackHeart.png';
-import BIN_blackHeart from '../assets/BIN_blackHeart.png'; 
+import BIN_blackHeart from '../assets/BIN_blackHeart.png';
 
 const ItemDetail = () => {
 	const route = useRoute();
@@ -29,6 +29,26 @@ const ItemDetail = () => {
 	const [liked, setLiked] = useState(false);
 	const [likeCount, setLikeCount] = useState(0);
 	const [distanceFromMe, setDistanceFromMe] = useState(null);
+	
+	useEffect(() => {
+		const fetchDistance = async () => {
+    		if (!item?.latitude || !item?.longitude) return;
+
+    		const { status } = await Location.requestForegroundPermissionsAsync();
+    		if (status !== 'granted') return;
+
+    		const current = await Location.getCurrentPositionAsync({});
+    		const dist = getDistance(
+      			current.coords.latitude,
+      			current.coords.longitude,
+      			item.latitude,
+      			item.longitude
+    		);
+    		setDistanceFromMe(dist.toFixed(1));
+  		};
+
+  		fetchDistance();
+	}, [item]);
 
 	useEffect(() => {
 		if (!itemId) {
