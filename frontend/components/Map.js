@@ -178,7 +178,7 @@ export default function MapScreen() {
 
 			{selectedItem && (
 				<View style={styles.bottomCard}>
-					<Image source={{ uri: selectedItem.imageURL }} style={styles.cardImage} />
+					<Image source={{ uri: selectedItem.imageURLs?.[0] || selectedItem.imageURL }} style={styles.cardImage} />
 					<View style={styles.cardTextBox}>
 						<Text style={styles.cardTitle}>{selectedItem.name}</Text>
 						<Text style={styles.cardDistance}>{selectedItem.distance.toFixed(1)}km 근처</Text>
@@ -204,17 +204,17 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-	container: { 
-		flex: 1 
+	container: {
+		flex: 1,
 	},
-	map: { 
-		width: Dimensions.get('window').width, 
-		height: Dimensions.get('window').height 
+	map: {
+		width: Dimensions.get('window').width,
+		height: Dimensions.get('window').height,
 	},
-	loadingContainer: { 
-		flex: 1, 
-		justifyContent: 'center', 
-		alignItems: 'center' 
+	loadingContainer: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
 	},
 	searchContainer: {
 		position: 'absolute',
@@ -228,8 +228,8 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		elevation: 4,
 	},
-	searchInput: { 
-		fontSize: 16 
+	searchInput: {
+		fontSize: 16,
 	},
 	categoryContainer: {
 		position: 'absolute',
@@ -248,17 +248,17 @@ const styles = StyleSheet.create({
 		backgroundColor: '#f0f0f0',
 		marginRight: 8,
 	},
-	categoryButtonSelected: { 
-		backgroundColor: '#31c585' 
+	categoryButtonSelected: {
+		backgroundColor: '#31c585',
 	},
-	categoryText: { 
-		fontSize: 14, 
-		color: '#333' 
+	categoryText: {
+		fontSize: 14,
+		color: '#333',
 	},
-	categoryTextSelected: { 
-		fontSize: 14, 
-		color: '#fff', 
-		fontWeight: 'bold' 
+	categoryTextSelected: {
+		fontSize: 14,
+		color: '#fff',
+		fontWeight: 'bold',
 	},
 	sortContainer: {
 		position: 'absolute',
@@ -276,17 +276,17 @@ const styles = StyleSheet.create({
 		backgroundColor: '#eee',
 		borderRadius: 8,
 	},
-	sortButtonSelected: { 
-		backgroundColor: '#31c585' 
+	sortButtonSelected: {
+		backgroundColor: '#31c585',
 	},
-	sortText: { 
-		fontSize: 13, 
-		color: '#333' 
+	sortText: {
+		fontSize: 13,
+		color: '#333',
 	},
-	sortTextSelected: { 
-		fontSize: 13, 
-		color: '#fff', 
-		fontWeight: 'bold' 
+	sortTextSelected: {
+		fontSize: 13,
+		color: '#fff',
+		fontWeight: 'bold',
 	},
 	locationButton: {
 		marginLeft: 'auto',
@@ -295,10 +295,10 @@ const styles = StyleSheet.create({
 		paddingVertical: 6,
 		borderRadius: 8,
 	},
-	locationButtonText: { 
-		color: '#fff', 
-		fontSize: 13, 
-		fontWeight: 'bold' 
+	locationButtonText: {
+		color: '#fff',
+		fontSize: 13,
+		fontWeight: 'bold',
 	},
 	searchResultBox: {
 		position: 'absolute',
@@ -318,22 +318,22 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: '#eee',
 	},
-	searchResultText: { 
-		fontSize: 15, 
-		color: '#333' 
+	searchResultText: {
+		fontSize: 15,
+		color: '#333',
 	},
-	searchResultSubText: { 
-		fontSize: 12, 
-		color: '#888', 
-		marginTop: 2 
+	searchResultSubText: {
+		fontSize: 12,
+		color: '#888',
+		marginTop: 2,
 	},
-	noResultContainer: { 
-		padding: 10, 
-		alignItems: 'center' 
+	noResultContainer: {
+		padding: 10,
+		alignItems: 'center',
 	},
-	noResultText: { 
-		fontSize: 14, 
-		color: '#888' 
+	noResultText: {
+		fontSize: 14,
+		color: '#888',
 	},
 	bottomCard: {
 		position: 'absolute',
@@ -362,9 +362,9 @@ const styles = StyleSheet.create({
 		alignSelf: 'flex-start',
 	},
 	footer: {
-    	position: 'absolute',
-    	bottom: 0,
-    	height: 83,
-    	width: '100%',
-  	},
+		position: 'absolute',
+		bottom: 0,
+		height: 83,
+		width: '100%',
+	},
 });
