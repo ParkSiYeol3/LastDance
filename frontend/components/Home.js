@@ -94,7 +94,6 @@ const Home = () => {
       >
         {(item.imageURLs?.length > 0 || item.imageURL) && <Image source={{ uri: item.imageURLs?.[0] || item.imageURL }} style={styles.image} />}
         <View style={styles.infoBox}>
-          <Text style={styles.brand}>{item.brand || '브랜드'}</Text>
           <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
           <View style={styles.metaRow}>
             <TouchableOpacity onPress={() => toggleLikeFromHome(item.id, item.likedBy || [], isLiked)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -260,11 +259,6 @@ const styles = StyleSheet.create({
 	},
 	infoBox: {
 		padding: 10,
-	},
-	brand: {
-		fontSize: 13,
-		color: '#999',
-		marginBottom: 2,
 	},
 	name: {
 		fontSize: 14,

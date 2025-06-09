@@ -331,7 +331,6 @@ const ItemDetail = () => {
 	return (
 		<>
 		<ScrollView contentContainerStyle={styles.container} nestedScrollEnabled={true}>
-			Add commentMore actions
 			<View style={styles.imageBox}>
 				{Array.isArray(item.imageURLs) && item.imageURLs.length > 0 ? (
 					<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageSlider}>

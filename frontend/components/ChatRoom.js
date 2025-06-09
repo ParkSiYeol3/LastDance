@@ -1,8 +1,5 @@
-// ChatRoom.js
-
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, FlatList, Text, TouchableOpacity, Image, StyleSheet, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
-import Footer from './Footer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -296,7 +293,7 @@ const ChatRoom = ({ route, navigation }) => {
 				name: 'photo.jpg',
 			});
 
-			const response = await fetch('http://192.168.1.173:8082/predict', {
+			const response = await fetch('http://192.168.0.36:8082/predict', {
 				method: 'POST',
 				headers: { 'Content-Type': 'multipart/form-data' },
 				body: formData,
@@ -344,7 +341,7 @@ const ChatRoom = ({ route, navigation }) => {
 			});
 
 			try {
-				const response = await fetch('http://192.168.1.173:8082/predict', {
+				const response = await fetch('http://192.168.0.36:8082/predict', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'multipart/form-data',
@@ -390,6 +387,9 @@ const ChatRoom = ({ route, navigation }) => {
 		<View style={styles.container}>
 			{/* 상단에 신고하기 버튼 */}
 			<View style={styles.header}>
+				<TouchableOpacity onPress={() => navigation.goBack()} style={styles.BackButton}>
+					<Text style={styles.BackText}>‹ 채팅</Text>
+				</TouchableOpacity>
 				<Text style={styles.headerTitle}>채팅방</Text>
 				<TouchableOpacity style={styles.reportButton} onPress={onPressReport}>
 					<Text style={styles.reportButtonText}>신고하기</Text>
@@ -515,9 +515,7 @@ const ChatRoom = ({ route, navigation }) => {
 				</TouchableOpacity>
 			</View>
 
-			<View style={styles.footer}>
-				<Footer navigation={navigation} />
-			</View>
+		
 		</View>
 	);
 };
@@ -536,6 +534,11 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderColor: '#ddd',
 	},
+	BackText: {
+    	fontSize: 16, 
+    	color: '#31c585', 
+    	fontWeight: 'bold'
+  	},
 	headerTitle: {
 		fontSize: 18,
 		fontWeight: 'bold',

@@ -73,7 +73,8 @@ const Settings = ({ navigation }) => {
 
         <View style={styles.card}>
         <Text style={styles.cardTitle}>계정 관리</Text>
-        <TouchableOpacity onPress={handleLogout}>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutRow}>
+          <Image source={require('../assets/logout.png')} style={styles.logoutIcon} />
           <Text style={styles.logoutText}>로그아웃</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => Alert.alert('회원 탈퇴 안내', '탈퇴를 원하시면 이메일로 문의해주세요.')}>
@@ -188,6 +189,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
+  },
+  logoutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 6,
+  },
+  logoutIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+    marginRight: 8,
+    tintColor: '#1e90ff',
   },
   logoutText: {
     color: '#1e90ff',

@@ -58,17 +58,24 @@ const RecentViews = ({ navigation }) => {
 	}, []);
 
 	const renderItem = ({ item }) => (
-		<TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}>
-			<Image source={{ uri: item.imageURL || 'https://via.placeholder.com/100' }} style={styles.image} />
-			<Text style={styles.title} numberOfLines={1}>
-				{item.name}
-			</Text>
-			{/* ❤️ 좋아요 + ⭐ 평균 별점 UI 추가 */}
-			<Text style={styles.meta}>
-				❤️ {item.likes} ⭐ {item.averageRating}
-			</Text>
-		</TouchableOpacity>
-	);
+	<TouchableOpacity
+		style={styles.card}
+    	onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
+  	>
+    	<Image
+			source={{
+        	uri: Array.isArray(item.imageURL)
+          	? item.imageURL[0]
+          	: item.imageURL || 'https://via.placeholder.com/100',
+      	}}
+      	style={styles.image}
+    	/>
+    	<Text style={styles.title} numberOfLines={1}>
+      		{item.name}
+    	</Text>
+    	<Text style={styles.meta}>❤️ {item.likes} ⭐ {item.averageRating}</Text>
+  	</TouchableOpacity>
+);
 
 	return (
 		<View style={styles.container}>

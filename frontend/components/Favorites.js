@@ -1,42 +1,59 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, get, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../firebase-config';
 import Footer from './Footer';
 import BlackHeart from '../assets/blackHeart.png';
+import { API_URL } from '../firebase-config';
+import axios from 'axios';
+
 const Favorites = ({ navigation }) => {
   const [favoriteItems, setFavoriteItems] = useState([]);
 
   useEffect(() => {
-    const fetchFavorites = async () => {
-      try {
-        const userJson = await AsyncStorage.getItem('currentUser');
-        if (!userJson) return;
-        const user = JSON.parse(userJson);
+  const fetchFavorites = async () => {
+    try {
+      const userJson = await AsyncStorage.getItem('currentUser');
+      if (!userJson) return;
+      const user = JSON.parse(userJson);
 
-        // 1. 사용자의 favorites 목록 가져오기
-        const favRef = collection(db, 'favorites');
-        const favQuery = query(favRef, where('userId', '==', user.uid));
-        const favSnapshot = await getDocs(favQuery);
+      // 1. 사용자의 favorites 목록 가져오기
+      const favRef = collection(db, 'favorites');
+      const favQuery = query(favRef, where('userId', '==', user.uid));
+      const favSnapshot = await getDocs(favQuery);
 
-        const itemPromises = favSnapshot.docs.map(async (docSnap) => {
-          const itemId = docSnap.data().itemId;
-          const createdAt = docSnap.data().createdAt?.toDate();
-          const itemRef = doc(db, 'items', itemId);
-          const itemSnap = await getDoc(itemRef);
-          return { id: itemId, ...itemSnap.data(), createdAt };
-        });
+      // 2. 각 favorite item의 상세 정보 가져오기 (예외처리 포함)
+      const itemPromises = favSnapshot.docs.map(async (docSnap) => {
+        const itemId = docSnap.data().itemId;
+        const createdAt = docSnap.data().createdAt?.toDate();
+        try {
+          const res = await axios.get(`${API_URL}/api/items/${itemId}`);
+          const item = res.data.item;
+          return { id: itemId, ...item, createdAt };
+        } catch (error) {
+          console.warn(`❌ 아이템 ${itemId} 불러오기 실패:`, error.response?.status, error.response?.data);
 
-        const items = await Promise.all(itemPromises);
-        setFavoriteItems(items.filter(Boolean));
-      } catch (err) {
-        console.error('좋아요 목록 불러오기 실패:', err);
-      }
-    };
+          try {
+            await deleteDoc(doc(db, 'favorites', docSnap.id));
+            console.log(`✅ 삭제된 아이템 ${itemId}의 favorite 문서 제거됨`);
+          } catch (deleteErr) {
+            console.error(`❌ favorite 문서 삭제 실패: ${docSnap.id}`, deleteErr);
+          }
 
-    fetchFavorites();
-  }, []);
+          return null;
+        }
+      });
+
+      const items = await Promise.all(itemPromises);
+      setFavoriteItems(items.filter(Boolean));
+    } catch (err) {
+      console.error('좋아요 목록 불러오기 실패:', err);
+    }
+  };
+
+  fetchFavorites();
+}, []);
 
   return (
     <View style={styles.container}>

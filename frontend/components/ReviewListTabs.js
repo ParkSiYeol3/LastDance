@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator }
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Footer from './Footer';
 
-const API_URL = 'http://172.30.1.11:3000';
+const API_URL = 'http://192.168.0.36:3000';
 
 const ReviewListTabs = () => {
   const route = useRoute();
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
   },
   tabActive: {
-    borderColor: '#00bcd4',
+    borderColor: '#31c585',
   },
   tabText: {
     fontSize: 16,

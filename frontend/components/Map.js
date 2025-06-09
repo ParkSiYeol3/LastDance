@@ -121,7 +121,7 @@ export default function MapScreen() {
 					</TouchableOpacity>
 				))}
 				<TouchableOpacity onPress={centerToCurrentLocation} style={styles.locationButton}>
-					<Text style={styles.locationButtonText}>📍 내 위치</Text>
+					<Text style={styles.locationButtonText}>🚩 내 위치</Text>
 				</TouchableOpacity>
 			</View>
 
