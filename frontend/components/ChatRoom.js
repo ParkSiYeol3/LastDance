@@ -505,7 +505,18 @@ const ChatRoom = ({ route, navigation }) => {
 			)}
 
 			{/* 6) 채팅 메시지 리스트 */}
-			<FlatList data={messages} inverted keyExtractor={(item) => item.id} renderItem={renderItem} contentContainerStyle={{ padding: 10 }} keyboardShouldPersistTaps='handled' />
+			<FlatList
+			data={messages}
+  			keyExtractor={(item) => item.id}
+  			renderItem={renderItem}
+  			contentContainerStyle={{
+				padding: 10,
+    			flexGrow: 1,
+    			justifyContent: 'flex-end',
+  			}}
+  			keyboardShouldPersistTaps="handled"
+			/>
+
 
 			{/* 7) 메시지 입력창 */}
 			<View style={styles.inputContainer}>
