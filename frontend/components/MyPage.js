@@ -109,7 +109,7 @@ const MyPage = ({ navigation }) => {
          });
 
          try {
-            const response = await fetch('http://192.168.0.36:8082/predict', {
+            const response = await fetch('http://172.30.1.31:8082/predict', {
                method: 'POST',
                headers: {
                   'Content-Type': 'multipart/form-data',
@@ -150,7 +150,7 @@ const MyPage = ({ navigation }) => {
          });
 
          try {
-            const response = await fetch('http://192.168.0.36:8082/predict', {
+            const response = await fetch('http://172.30.1.31:8082/predict', {
                method: 'POST',
                headers: {
                   'Content-Type': 'multipart/form-data',
@@ -195,7 +195,7 @@ const MyPage = ({ navigation }) => {
             <Image source={{ uri: userData.profileImage || 'https://via.placeholder.com/60' }} style={styles.profileImage} />
             <View style={styles.profileInfo}>
                <Text style={styles.nickname}>{userData.name} 님</Text>
-               <Text style={styles.rating}>⭐{averageRating ?? '0.0'} / 5</Text>
+               <Text style={styles.rating}>⭐ {averageRating ?? '0.0'} / 5</Text>
             </View>
             <TouchableOpacity onPress={openSettings} style={styles.gearButton}>
                <Image source={gearIcon} style={styles.gearIcon} />
@@ -203,16 +203,19 @@ const MyPage = ({ navigation }) => {
          </View>
 
          <TouchableOpacity onPress={() => navigation.navigate('ReviewListTabs', { userId: userId, type: 'received' })} style={styles.reviewButton}>
-            <Text style={styles.reviewButtonText}>📃 내가 받은 & 작성한 리뷰 보기</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+               <Image source={require('../assets/review.png')} style={styles.iconImage} />
+               <Text style={styles.reviewButtonText}>내가 받은 리뷰 보기</Text>
+            </View>
          </TouchableOpacity>
 
          <ScrollView contentContainerStyle={styles.content}>
             <View style={styles.menuBox}>
-               <MenuItem label='🧾 보증금 결제 내역' onPress={() => navigation.navigate('SalesHistory')} />
-               <MenuItem label='♥️ 관심 상품' onPress={() => navigation.navigate('Favorites')} />
-               <MenuItem label='🕒 최근 본 상품' onPress={() => navigation.navigate('RecentViews')} />
-               <MenuItem label='📢 공지사항' onPress={() => navigation.navigate('Notice')} />
-               <MenuItem label='📩 승인 요청 내역' onPress={() => navigation.navigate('RentalRequests')} />
+               <MenuItem icon={require('../assets/SalesHistory.png')} label='보증금 결제 내역' onPress={() => navigation.navigate('SalesHistory')} />
+               <MenuItem icon={require('../assets/blackHeart.png')} label='관심 상품' onPress={() => navigation.navigate('Favorites')} />
+               <MenuItem icon={require('../assets/RecentViews.png')} label='최근 본 상품' onPress={() => navigation.navigate('RecentViews')} />
+               <MenuItem icon={require('../assets/Notice.png')} label='공지사항' onPress={() => navigation.navigate('Notice')} />
+               <MenuItem icon={require('../assets/RentalRequests.png')} label='승인 요청 내역' onPress={() => navigation.navigate('RentalRequests')} />
             </View>
 
             {userData.role === 'admin' && (
@@ -243,11 +246,14 @@ const MyPage = ({ navigation }) => {
    );
 };
 
-const MenuItem = ({ label, onPress }) => (
-   <TouchableOpacity onPress={onPress} style={styles.menuItem}>
+const MenuItem = ({ icon, label, onPress }) => (
+  <TouchableOpacity onPress={onPress} style={styles.menuItem}>
+    <View style={styles.menuItemContent}>
+      <Image source={icon} style={styles.iconImage} />
       <Text style={styles.menuText}>{label}</Text>
-      <Text style={styles.menuArrow}>›</Text>
-   </TouchableOpacity>
+    </View>
+    <Text style={styles.menuArrow}>›</Text>
+  </TouchableOpacity>
 );
 
 export default MyPage;
@@ -336,12 +342,17 @@ const styles = StyleSheet.create({
       borderRadius: 10,
       alignItems: 'center',
    },
+   iconImage: {
+      width: 20,
+      height: 20,
+      marginRight: 10,
+      resizeMode: 'contain',
+   },
    reviewButtonText: {
       color: '#00796b',
       fontWeight: 'bold',
       fontSize: 15,
    },
-
    menuBox: {
       borderTopWidth: 1,
       borderColor: '#eee',
@@ -350,9 +361,20 @@ const styles = StyleSheet.create({
    menuItem: {
       flexDirection: 'row',
       justifyContent: 'space-between',
+      alignItems: 'center',
       paddingVertical: 16,
       borderBottomWidth: 1,
       borderColor: '#eee',
+   },
+   menuItemContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+   },
+   iconImage: {
+      width: 20,
+      height: 20,
+      marginRight: 10,
+      resizeMode: 'contain',
    },
    menuText: {
       fontSize: 16,

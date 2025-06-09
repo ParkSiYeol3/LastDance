@@ -46,7 +46,11 @@ const Favorites = ({ navigation }) => {
       });
 
       const items = await Promise.all(itemPromises);
-      setFavoriteItems(items.filter(Boolean));
+      const filtered = items.filter(Boolean);
+      if (filtered.length !== items.length) {
+        console.warn('🗑 일부 삭제된 아이템이 제거되었습니다.');
+      }
+setFavoriteItems(filtered);
     } catch (err) {
       console.error('좋아요 목록 불러오기 실패:', err);
     }
@@ -69,14 +73,13 @@ const Favorites = ({ navigation }) => {
               style={styles.card}
               onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
             >
-              <Image
-                style={styles.image}
-                source={
-                  item.imageURL
-                    ? { uri: item.imageURL }
-                    : require('../assets/top.png') // 기본 이미지
-                }
-              />
+              <Image style={styles.image} source={{ uri: Array.isArray(item.imageURLs) && item.imageURLs.length > 0
+              ? item.imageURLs[0]
+              : typeof item.imageURL === 'string'
+                ? item.imageURL
+                : 'https://via.placeholder.com/100'
+              }}/>
+              
               <View style={styles.cardContent}>
                 <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
                 <Text style={styles.deposit}>{item.deposit ? `보증금 ${Number(item.deposit).toLocaleString()}원` : '보증금 미정'}</Text>

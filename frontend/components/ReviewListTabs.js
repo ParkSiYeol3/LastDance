@@ -3,21 +3,20 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator }
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Footer from './Footer';
 
-const API_URL = 'http://192.168.0.36:3000';
+const API_URL = 'http://172.30.1.31:3000';
 
 const ReviewListTabs = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { userId } = route.params;
-  const [tab, setTab] = useState('received');
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [averageRating, setAverageRating] = useState(null);
   const [reviewCount, setReviewCount] = useState(null);
 
-  const fetchReviews = async (type) => {
+  const fetchReviews = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/reviews/${type}/${userId}`);
+      const res = await fetch(`${API_URL}/api/reviews/received/${userId}`);
       const json = await res.json();
       setReviews(Array.isArray(json.reviews) ? json.reviews : []);
     } catch (err) {
@@ -40,9 +39,9 @@ const ReviewListTabs = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetchReviews(tab);
-    if (tab === 'received') fetchAverage();
-  }, [tab]);
+    fetchReviews();
+    fetchAverage();
+  }, []);
 
   const renderItem = ({ item }) => (
     <View style={styles.reviewCard}>
@@ -67,21 +66,11 @@ const ReviewListTabs = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>내 리뷰</Text>
+      <Text style={styles.title}>내가 받은 리뷰</Text>
 
-      <View style={styles.tabContainer}>
-        <TouchableOpacity onPress={() => setTab('received')} style={[styles.tabButton, tab === 'received' && styles.tabActive]}>
-          <Text style={styles.tabText}>받은 리뷰</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => setTab('written')} style={[styles.tabButton, tab === 'written' && styles.tabActive]}>
-          <Text style={styles.tabText}>작성한 리뷰</Text>
-        </TouchableOpacity>
-      </View>
-
-      {tab === 'received' && averageRating !== null && (
+      {averageRating !== null && (
         <Text style={styles.average}>
-          🌟 평균 별점: {averageRating}점 ({reviewCount}개 리뷰)
+          ⭐ 평균 별점: {averageRating}점 ({reviewCount}개 리뷰)
         </Text>
       )}
 
@@ -96,10 +85,9 @@ const ReviewListTabs = () => {
         />
       )}
 
-        <View style={styles.footer}>
-            <Footer navigation={navigation}/>
-        </View>
-
+      <View style={styles.footer}>
+        <Footer navigation={navigation} />
+      </View>
     </View>
   );
 };
@@ -107,34 +95,15 @@ const ReviewListTabs = () => {
 export default ReviewListTabs;
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#fff', 
-    padding: 16 
-  },
-  title: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    marginBottom: 12 
-  },
-  tabContainer: { 
-    flexDirection: 'row', 
-    marginBottom: 12 
-  },
-  tabButton: {
+  container: {
     flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderColor: '#ccc',
+    backgroundColor: '#fff',
+    padding: 16,
   },
-  tabActive: {
-    borderColor: '#31c585',
-  },
-  tabText: {
-    fontSize: 16,
+  title: {
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    marginBottom: 12,
   },
   average: {
     fontSize: 15,
@@ -204,9 +173,9 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   footer: {
-		position: 'absolute',
-		bottom: 0,
-		height: 83,
-		width: '109%',
+    position: 'absolute',
+    bottom: 0,
+    height: 83,
+    width: '109%',
   },
 });

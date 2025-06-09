@@ -18,27 +18,36 @@ const RentalRequests = () => {
 	}, []);
 
 	const fetchRequests = async () => {
-		try {
-			const userId = await AsyncStorage.getItem('userId');
-			const q = query(collection(db, 'rentals'), where('ownerId', '==', userId), orderBy('timestamp', 'desc'));
-			const snapshot = await getDocs(q);
+  		try {
+    		const userId = await AsyncStorage.getItem('userId');
+    		const q = query(collection(db, 'rentals'), where('ownerId', '==', userId), orderBy('timestamp', 'desc'));
+    		const snapshot = await getDocs(q);
 
-			const results = [];
-			for (const docSnap of snapshot.docs) {
-				const rental = docSnap.data();
-				const itemSnap = await getDoc(doc(db, 'items', rental.itemId));
-				const item = itemSnap.exists() ? itemSnap.data() : { name: '알 수 없음', description: '' };
-				const userSnap = await getDoc(doc(db, 'users', rental.requesterId));
-				const requesterName = userSnap.exists() ? userSnap.data().name : rental.requesterId;
+    		const results = [];
+    		for (const docSnap of snapshot.docs) {
+      		const rental = docSnap.data();
 
-				results.push({ id: docSnap.id, ...rental, item, requesterName });
-			}
+      		// 아이템 문서 가져오기
+      		const itemSnap = await getDoc(doc(db, 'items', rental.itemId));
+      		if (!itemSnap.exists()) {
+       		console.warn(`❗ 삭제된 아이템 필터링됨 (itemId: ${rental.itemId})`);
+        		continue; // ➤ 삭제된 아이템은 건너뜀
+      		}
 
-			setRequests(results);
-		} catch (err) {
-			console.error('요청 목록 불러오기 실패:', err);
-		}
-	};
+      		const item = itemSnap.data();
+
+      		// 요청자 이름 가져오기
+      		const userSnap = await getDoc(doc(db, 'users', rental.requesterId));
+      		const requesterName = userSnap.exists() ? userSnap.data().name : rental.requesterId;
+
+      		results.push({ id: docSnap.id, ...rental, item, requesterName });
+    		}
+
+    		setRequests(results);
+ 		 } catch (err) {
+    		console.error('요청 목록 불러오기 실패:', err);
+  		}
+		};
 
 	const handleUpdateStatus = async (rentalId, status, requesterId, itemId) => {
 		try {
@@ -106,7 +115,7 @@ const RentalRequests = () => {
 	return (
 		<>
 		<ScrollView contentContainerStyle={styles.container}>
-			<Text style={styles.title}>📩 받은 대여 요청</Text>
+			<Text style={styles.title}>회원님이 받은 대여 요청</Text>
 			{requests.length === 0 ? (
 				<Text style={{ marginTop: 20 }}>받은 요청이 없습니다.</Text>
 			) : (

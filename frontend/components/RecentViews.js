@@ -57,25 +57,33 @@ const RecentViews = ({ navigation }) => {
 		fetchRecentItems();
 	}, []);
 
-	const renderItem = ({ item }) => (
-	<TouchableOpacity
-		style={styles.card}
-    	onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
-  	>
-    	<Image
-			source={{
-        	uri: Array.isArray(item.imageURL)
-          	? item.imageURL[0]
-          	: item.imageURL || 'https://via.placeholder.com/100',
-      	}}
-      	style={styles.image}
-    	/>
-    	<Text style={styles.title} numberOfLines={1}>
-      		{item.name}
-    	</Text>
-    	<Text style={styles.meta}>❤️ {item.likes} ⭐ {item.averageRating}</Text>
-  	</TouchableOpacity>
-);
+	const renderItem = ({ item }) => {
+		const imageUri = Array.isArray(item.imageURL)
+    		? item.imageURL[0] || 'https://via.placeholder.com/100'
+    		: item.imageURL || 'https://via.placeholder.com/100';
+
+  		return (
+		<TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}>
+      		 <Image source={{ uri: Array.isArray(item.imageURLs) && item.imageURLs.length > 0
+			 	? item.imageURLs[0]
+        		: typeof item.imageURL === 'string' && item.imageURL.startsWith('http')
+        		? item.imageURL
+        		: 'https://via.placeholder.com/100',
+  			}}
+  			style={styles.image}/>
+
+      		<Text style={styles.title} numberOfLines={1}>
+        		{item.name}
+      		</Text>
+      		<View style={styles.iconRow}>
+        		<Image source={require('../assets/blackHeart.png')} style={styles.icon} />
+        		<Text style={styles.iconText}>{item.likes}</Text>
+        		<Image source={require('../assets/star.png')} style={[styles.icon, { marginLeft: 8 }]} />
+        		<Text style={styles.iconText}>{item.averageRating}</Text>
+      		</View>
+    	</TouchableOpacity>
+  		);
+	};
 
 	return (
 		<View style={styles.container}>
@@ -119,6 +127,22 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		elevation: 2,
 		fontWeight: 'bold',
+	},
+	iconRow: {
+		flexDirection: 'row',
+  		alignItems: 'center',
+  		marginTop: 4,
+	},
+	icon: {
+  		width: 12,
+  		height: 12,
+		resizeMode: 'contain',
+	},
+	iconText: {
+  		fontSize: 12,
+  		color: '#666',
+  		marginLeft: 4,
+		marginRight: 2,
 	},
 	meta: {
 		fontSize: 12,
