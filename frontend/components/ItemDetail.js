@@ -29,25 +29,20 @@ const ItemDetail = () => {
 	const [liked, setLiked] = useState(false);
 	const [likeCount, setLikeCount] = useState(0);
 	const [distanceFromMe, setDistanceFromMe] = useState(null);
-	
+
 	useEffect(() => {
 		const fetchDistance = async () => {
-    		if (!item?.latitude || !item?.longitude) return;
+			if (!item?.latitude || !item?.longitude) return;
 
-    		const { status } = await Location.requestForegroundPermissionsAsync();
-    		if (status !== 'granted') return;
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== 'granted') return;
 
-    		const current = await Location.getCurrentPositionAsync({});
-    		const dist = getDistance(
-      			current.coords.latitude,
-      			current.coords.longitude,
-      			item.latitude,
-      			item.longitude
-    		);
-    		setDistanceFromMe(dist.toFixed(1));
-  		};
+			const current = await Location.getCurrentPositionAsync({});
+			const dist = getDistance(current.coords.latitude, current.coords.longitude, item.latitude, item.longitude);
+			setDistanceFromMe(dist.toFixed(1));
+		};
 
-  		fetchDistance();
+		fetchDistance();
 	}, [item]);
 
 	useEffect(() => {
@@ -63,11 +58,7 @@ const ItemDetail = () => {
 		const R = 6371;
 		const dLat = ((lat2 - lat1) * Math.PI) / 180;
 		const dLon = ((lon2 - lon1) * Math.PI) / 180;
-		const a =
-			Math.sin(dLat / 2) ** 2 +
-			Math.cos((lat1 * Math.PI) / 180) *
-				Math.cos((lat2 * Math.PI) / 180) *
-				Math.sin(dLon / 2) ** 2;
+		const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 		return R * c;
 	};
@@ -97,15 +88,10 @@ const ItemDetail = () => {
 			const { status } = await Location.requestForegroundPermissionsAsync();
 			if (status === 'granted') {
 				const current = await Location.getCurrentPositionAsync({});
-					if (item?.latitude && item?.longitude) {
-						const dist = getDistance(
-							current.coords.latitude,
-							current.coords.longitude,
-							item.latitude,
-							item.longitude
-						);
-						setDistanceFromMe(dist.toFixed(1)); // 1.8km 식으로
-					}
+				if (item?.latitude && item?.longitude) {
+					const dist = getDistance(current.coords.latitude, current.coords.longitude, item.latitude, item.longitude);
+					setDistanceFromMe(dist.toFixed(1)); // 1.8km 식으로
+				}
 			}
 		} catch (error) {
 			console.error('유저 정보 로딩 오류:', error);
@@ -232,7 +218,7 @@ const ItemDetail = () => {
 
 			// 상태 반영
 			setLiked(!isLiked);
-			setLikeCount(updatedLikes.length); 
+			setLikeCount(updatedLikes.length);
 		} catch (err) {
 			console.error('좋아요 처리 실패:', err);
 		}
@@ -330,91 +316,95 @@ const ItemDetail = () => {
 
 	return (
 		<>
-		<ScrollView contentContainerStyle={styles.container} nestedScrollEnabled={true}>
-			<View style={styles.imageBox}>
-				{Array.isArray(item.imageURLs) && item.imageURLs.length > 0 ? (
-					<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageSlider}>
-						{item.imageURLs.map((url, index) => (
-							<Image key={index} source={{ uri: url }} style={styles.image} />
-						))}
-					</ScrollView>
-				) : (
-					item.imageURL && <Image source={{ uri: item.imageURL }} style={styles.image} />
-				)}
-			</View>
-			<View style={styles.card}>
-				<Text style={styles.title}>{item.name}</Text>
-				<Text style={styles.description}>{item.description}</Text>
-				{distanceFromMe && (
-  					<Text style={styles.distanceText}>👣 회원님의 위치로부터 약 {distanceFromMe}km 떨어져 있습니다.</Text>
-				)}
-				<View style={styles.iconContainer}>
-					<TouchableOpacity onPress={toggleLike}>
-						<Image source={liked ? BlackHeart : BIN_blackHeart } style={styles.heartIcon} />
-						<Text style={styles.likeCount}>{likeCount}</Text>
-					</TouchableOpacity>
+			<ScrollView contentContainerStyle={styles.container} nestedScrollEnabled={true}>
+				<View style={styles.imageBox}>
+					{Array.isArray(item.imageURLs) && item.imageURLs.length > 0 ? (
+						<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageSlider}>
+							{item.imageURLs.map((url, index) => (
+								<TouchableOpacity key={index} onPress={() => navigation.navigate('ImagePreview', { imageUrl: url })}>
+									<Image source={{ uri: url }} style={styles.image} />
+								</TouchableOpacity>
+							))}
+						</ScrollView>
+					) : (
+						item.imageURL && (
+							<TouchableOpacity onPress={() => navigation.navigate('ImagePreview', { imageUrl: item.imageURL })}>
+								<Image source={{ uri: item.imageURL }} style={styles.image} />
+							</TouchableOpacity>
+						)
+					)}
 				</View>
+				<View style={styles.card}>
+					<Text style={styles.title}>{item.name}</Text>
+					<Text style={styles.description}>{item.description}</Text>
+					{distanceFromMe && <Text style={styles.distanceText}>👣 회원님의 위치로부터 약 {distanceFromMe}km 떨어져 있습니다.</Text>}
+					<View style={styles.iconContainer}>
+						<TouchableOpacity onPress={toggleLike}>
+							<Image source={liked ? BlackHeart : BIN_blackHeart} style={styles.heartIcon} />
+							<Text style={styles.likeCount}>{likeCount}</Text>
+						</TouchableOpacity>
+					</View>
 
-				{item?.userId && (
-					<View style={styles.sellerRow}>
-						<Text style={styles.ownerText}>판매자: {itemOwnerName}</Text>
-						<TouchableOpacity
-							style={styles.reviewButton}
-							onPress={() =>
-								navigation.navigate('ReviewList', {
-									userId: item.userId,
-									type: 'received',
-								})
-							}
-						>
-							<Text style={styles.reviewButtonText}>후기 보기</Text>
+					{item?.userId && (
+						<View style={styles.sellerRow}>
+							<Text style={styles.ownerText}>판매자: {itemOwnerName}</Text>
+							<TouchableOpacity
+								style={styles.reviewButton}
+								onPress={() =>
+									navigation.navigate('ReviewList', {
+										userId: item.userId,
+										type: 'received',
+									})
+								}
+							>
+								<Text style={styles.reviewButtonText}>후기 보기</Text>
+							</TouchableOpacity>
+						</View>
+					)}
+				</View>
+				{isOwner && (
+					<View style={styles.ownerNoticeBox}>
+						<Text style={styles.ownerNoticeText}>본인의 물품입니다.</Text>
+					</View>
+				)}
+				{!isOwner && (
+					<View style={styles.buttonGroup}>
+						<TouchableOpacity style={styles.buttonPrimary} onPress={handleRentalRequest} disabled={rentalRequested}>
+							<Text style={styles.buttonText}>{rentalRequested ? '요청됨!' : '대여 요청하기'}</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.buttonOutline} onPress={handleStartChat} disabled={loadingChat}>
+							<Text style={[styles.buttonText, { color: '#4CAF50' }]}>{loadingChat ? '채팅 연결 중...' : '채팅하기'}</Text>
 						</TouchableOpacity>
 					</View>
 				)}
-			</View>
-			{isOwner && (
-				<View style={styles.ownerNoticeBox}>
-					<Text style={styles.ownerNoticeText}>본인의 물품입니다.</Text>
-				</View>
-			)}
-			{!isOwner && (
-				<View style={styles.buttonGroup}>
-					<TouchableOpacity style={styles.buttonPrimary} onPress={handleRentalRequest} disabled={rentalRequested}>
-						<Text style={styles.buttonText}>{rentalRequested ? '요청됨!' : '대여 요청하기'}</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.buttonOutline} onPress={handleStartChat} disabled={loadingChat}>
-						<Text style={[styles.buttonText, { color: '#4CAF50' }]}>{loadingChat ? '채팅 연결 중...' : '채팅하기'}</Text>
-					</TouchableOpacity>
-				</View>
-			)}
-			{isOwner && !editing && (
-				<View style={styles.ownerButtonGroup}>
-					<TouchableOpacity style={styles.buttonPrimary} onPress={() => setEditing(true)}>
-						<Text style={styles.buttonText}>상품 수정</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.buttonDanger} onPress={handleDelete}>
-						<Text style={styles.buttonText}>상품 삭제</Text>
-					</TouchableOpacity>
-				</View>
-			)}
-			{editing && (
-				<EditItemForm
-					item={{ id: itemId, ...item }}
-					onCancel={() => setEditing(false)}
-					onSuccess={async () => {
-						setEditing(false);
-						await fetchItem();
-					}}
-				/>
-			)}
-			<CommentSection itemId={itemId} currentUser={currentUser} />
-			<RentalHistory itemId={itemId} />
-		</ScrollView>
+				{isOwner && !editing && (
+					<View style={styles.ownerButtonGroup}>
+						<TouchableOpacity style={styles.buttonPrimary} onPress={() => setEditing(true)}>
+							<Text style={styles.buttonText}>상품 수정</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.buttonDanger} onPress={handleDelete}>
+							<Text style={styles.buttonText}>상품 삭제</Text>
+						</TouchableOpacity>
+					</View>
+				)}
+				{editing && (
+					<EditItemForm
+						item={{ id: itemId, ...item }}
+						onCancel={() => setEditing(false)}
+						onSuccess={async () => {
+							setEditing(false);
+							await fetchItem();
+						}}
+					/>
+				)}
+				<CommentSection itemId={itemId} currentUser={currentUser} />
+				<RentalHistory itemId={itemId} />
+			</ScrollView>
 
-		<View style={styles.footer}>
-			<Footer navigation={navigation} />
-		</View>
-	</>	
+			<View style={styles.footer}>
+				<Footer navigation={navigation} />
+			</View>
+		</>
 	);
 };
 export default ItemDetail;
@@ -422,20 +412,20 @@ export default ItemDetail;
 const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
-	container: { 
-		padding: 16, 
-		backgroundColor: '#fff', 
-		gap: 20 
+	container: {
+		padding: 16,
+		backgroundColor: '#fff',
+		gap: 20,
 	},
-	center: { 
-		flex: 1, 
-		justifyContent: 'center', 
-		alignItems: 'center' 
+	center: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
 	},
-	imageBox: { 
-		position: 'relative', 
-		alignItems: 'center', 
-		marginBottom: 10 
+	imageBox: {
+		position: 'relative',
+		alignItems: 'center',
+		marginBottom: 10,
 	},
 	imageSlider: {
 		width: '100%',
@@ -456,57 +446,57 @@ const styles = StyleSheet.create({
 		color: '#888',
 		fontStyle: 'italic',
 	},
-	iconContainer: { 
-		position: 'absolute', 
-		top: 16, 
-		right: 16, 
-		flexDirection: 'row', 
-		gap: 12 
+	iconContainer: {
+		position: 'absolute',
+		top: 16,
+		right: 16,
+		flexDirection: 'row',
+		gap: 12,
 	},
-	icon: { 
-		fontSize: 24, 
-		opacity: 0.4 
+	icon: {
+		fontSize: 24,
+		opacity: 0.4,
 	},
-	liked: { 
-		opacity: 1, 
-		color: '#4CAF50' 
+	liked: {
+		opacity: 1,
+		color: '#4CAF50',
 	},
 	heartIcon: {
-  		width: 28,
-  		height: 28,
-  		tintColor: '#000',
+		width: 28,
+		height: 28,
+		tintColor: '#000',
 	},
 	likeCount: {
-  		marginLeft: 9.6,
-  		fontSize: 16,
-  		color: '#444',
+		marginLeft: 9.6,
+		fontSize: 16,
+		color: '#444',
 	},
-	card: { 
-		backgroundColor: '#fff', 
-		borderRadius: 12, 
-		padding: 16, 
-		elevation: 2, 
-		gap: 10 
+	card: {
+		backgroundColor: '#fff',
+		borderRadius: 12,
+		padding: 16,
+		elevation: 2,
+		gap: 10,
 	},
-	title: { 
-		fontSize: 22, 
-		fontWeight: 'bold', 
-		color: '#222' 
+	title: {
+		fontSize: 22,
+		fontWeight: 'bold',
+		color: '#222',
 	},
-	description: { 
-		fontSize: 16, 
-		color: '#444', 
-		lineHeight: 22 
+	description: {
+		fontSize: 16,
+		color: '#444',
+		lineHeight: 22,
 	},
 	distanceText: {
 		marginTop: 2,
 		fontSize: 14,
 		color: '#777',
 	},
-	ownerText: { 
-		fontSize: 14, 
-		color: '#888', 
-		fontStyle: 'italic' 
+	ownerText: {
+		fontSize: 14,
+		color: '#888',
+		fontStyle: 'italic',
 	},
 	ownerNoticeBox: {
 		marginTop: 6,
@@ -515,32 +505,32 @@ const styles = StyleSheet.create({
 		borderRadius: 6,
 		alignItems: 'center',
 	},
-	ownerNoticeText: { 
-		color: '#555', 
-		fontSize: 14 
+	ownerNoticeText: {
+		color: '#555',
+		fontSize: 14,
 	},
-	sellerRow: { 
-		flexDirection: 'row', 
-		alignItems: 'center', 
-		justifyContent: 'space-between' 
+	sellerRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
 	},
-	reviewButton: { 
-		backgroundColor: '#007AFF', 
-		paddingVertical: 6, 
-		paddingHorizontal: 10, 
-		borderRadius: 6 
+	reviewButton: {
+		backgroundColor: '#007AFF',
+		paddingVertical: 6,
+		paddingHorizontal: 10,
+		borderRadius: 6,
 	},
-	reviewButtonText: { 
-		color: '#fff', 
-		fontSize: 13, 
-		fontWeight: 'bold' 
+	reviewButtonText: {
+		color: '#fff',
+		fontSize: 13,
+		fontWeight: 'bold',
 	},
-	ownerButtonGroup: { 
-		gap: 10, 
-		marginBottom: 20 
+	ownerButtonGroup: {
+		gap: 10,
+		marginBottom: 20,
 	},
-	buttonGroup: { 
-		width: '100%' 
+	buttonGroup: {
+		width: '100%',
 	},
 	buttonPrimary: {
 		backgroundColor: '#4CAF50',
@@ -570,9 +560,9 @@ const styles = StyleSheet.create({
 		color: '#fff',
 	},
 	footer: {
-  		position: 'absolute',
-  		bottom: 0,
-  		width: '100%',
-  		height: 83,
+		position: 'absolute',
+		bottom: 0,
+		width: '100%',
+		height: 83,
 	},
 });
