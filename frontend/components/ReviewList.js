@@ -3,225 +3,218 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity }
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Footer from './Footer';
 
-const API_URL = 'http://172.30.1.31:3000';
-
+const API_URL_NODEJS = 'http://59.27.213.240:3000';  // Node.js 서버 URL
+const API_URL_FLASK = 'http://59.27.213.240:8083';  // Flask 서버 URL
 
 export default function ReviewList() {
-	const route = useRoute();
-	const navigation = useNavigation();
-	const params = route?.params || {};
-	const userId = params.userId || '';
-	const type = params.type || 'received';
+  const route = useRoute();
+  const navigation = useNavigation();
+  const params = route?.params || {};
+  const userId = params.userId || '';
+  const type = params.type || 'received';
 
-	const [reviews, setReviews] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [averageRating, setAverageRating] = useState(null);
-	const [reviewCount, setReviewCount] = useState(null);
-	const [sortType, setSortType] = useState('latest');
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [averageRating, setAverageRating] = useState(null);
+  const [reviewCount, setReviewCount] = useState(null);
+  const [sortType, setSortType] = useState('latest');
 
-	const fetchReviews = async () => {
-		try {
-			if (!userId || !type) return;
-			const res = await fetch(`${API_URL}/api/reviews/${type}/${userId}`);
-			const json = await res.json();
-			console.log('📦 받아온 전체 응답:', json);
-			setReviews(Array.isArray(json.reviews) ? json.reviews : []);
-		} catch (err) {
-			console.error('리뷰 불러오기 실패:', err);
-		} finally {
-			setLoading(false);
-		}
-	};
+  // 리뷰 내용에 대한 감정 분석을 요청하는 함수
+  const fetchSentiment = async (content) => {
+    try {
+      const res = await fetch(`${API_URL_FLASK}/predict`, {  // Flask 서버의 /predict 엔드포인트로 요청
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: content }),  // 리뷰 내용 텍스트를 서버로 전송
+      });
+      const json = await res.json();
+      return json.label;  // 반환된 감정 분석 결과(positive, negative, neutral)
+    } catch (err) {
+      console.error('감정 분석 실패:', err);
+      return 'neutral';  // 오류 발생 시 기본값 'neutral'
+    }
+  };
 
-	const fetchAverage = async () => {
-		try {
-			const res = await fetch(`${API_URL}/api/reviews/average/${userId}`);
-			const json = await res.json();
-			setAverageRating(json.average);
-			setReviewCount(json.count);
-		} catch (err) {
-			console.error('평균 별점 불러오기 실패:', err);
-		}
-	};
+  // 리뷰 데이터 가져오기
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch(`${API_URL_NODEJS}/api/reviews/${type}/${userId}`);
+      const json = await res.json();
+      const reviewsWithSentiment = await Promise.all(
+        json.reviews.map(async (review) => {
+          const sentiment = await fetchSentiment(review.content);
+          return { ...review, sentiment };  // 리뷰에 감정 분석 결과 추가
+        })
+      );
+      setReviews(reviewsWithSentiment);
+    } catch (err) {
+      console.error('리뷰 불러오기 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-	useEffect(() => {
-		fetchReviews();
-		if (type === 'received') fetchAverage();
-	}, []);
+  // 평균 별점 가져오기
+  const fetchAverage = async () => {
+    try {
+      const res = await fetch(`${API_URL_NODEJS}/api/reviews/average/${userId}`);
+      const json = await res.json();
+      setAverageRating(json.average);
+      setReviewCount(json.count);
+    } catch (err) {
+      console.error('평균 별점 불러오기 실패:', err);
+    }
+  };
 
-	const getSortedReviews = () => {
-		if (!Array.isArray(reviews)) return [];
-		if (sortType === 'rating') {
-			return [...reviews].sort((a, b) => b.rating - a.rating);
-		} else {
-			return [...reviews].sort((a, b) => {
-				const aTime = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(a.createdAt);
-				const bTime = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(b.createdAt);
-				return bTime - aTime;
-			});
-		}
-	};
+  useEffect(() => {
+    setLoading(true);
+    fetchReviews();
+    fetchAverage();
+  }, []);
 
-	const renderItem = ({ item }) => (
-		<View style={styles.reviewCard}>
-			{/* 👤 닉네임 표시 */}
-			<Text style={styles.nickname}>👤 작성자: {item.reviewerProfile?.nickname || item.reviewerId}</Text>
+  // 감정 분석에 따른 스타일
+  const sentimentStyles = {
+    positive: { color: 'green' },  // 긍정은 초록색
+    negative: { color: 'red' },    // 부정은 빨간색
+    neutral: { color: 'gray' },    // 중립은 회색
+  };
 
-			{/* ⭐ 별점 */}
-			<Text style={styles.rating}>⭐ 별점: {item.rating}점</Text>
+  const renderItem = ({ item }) => (
+    <View style={styles.reviewCard}>
+      <Text style={styles.nickname}>👤 작성자: {item.reviewerProfile?.nickname || item.reviewerId}</Text>
+      <Text style={styles.rating}>⭐ 별점: {item.rating}점</Text>
+      <Text style={styles.rentalItemName}>🧥 아이템: {item.rentalItemName || item.rentalItemId}</Text>
+      <Text style={styles.content}>📝 {item.content || '(내용 없음)'}</Text>
+      {item.summary && <Text style={styles.summary}>📌 {item.summary}</Text>}
+      <View style={styles.tags}>
+        {Array.isArray(item.tags) && item.tags.map((tag) => (
+          <Text key={tag} style={styles.tag}>{tag}</Text>
+        ))}
+      </View>
+      <Text style={styles.date}>{item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleString() : ''}</Text>
 
-			{/* 🧥 상품 이름 */}
-			<Text style={styles.rentalItemName}>🧥 아이템: {item.rentalItemName || item.rentalItemId}</Text>
+      {/* 감정 분석 결과 */}
+      {item.sentiment && (
+        <Text style={[styles.sentiment, sentimentStyles[item.sentiment]]}>
+          감정 분석: 
+          {item.sentiment === 'positive' ? '👍 긍정' : 
+           item.sentiment === 'negative' ? '👎 부정' : '😐 중립'}
+        </Text>
+      )}
+    </View>
+  );
 
-			{/* 📝 내용 */}
-			<Text style={styles.content}>📝 {item.content || '(내용 없음)'}</Text>
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>{type === 'received' ? '받은 리뷰' : '작성한 리뷰'}</Text>
 
-			{/* 📌 요약 */}
-			{item.summary && <Text style={styles.summary}>📌 {item.summary}</Text>}
+      {averageRating !== null && (
+        <Text style={styles.average}>
+          ⭐ 평균 별점: {averageRating}점 ({reviewCount}개 리뷰)
+        </Text>
+      )}
 
-			{/* 🏷️ 태그 */}
-			<View style={styles.tags}>
-				{Array.isArray(item.tags) &&
-					item.tags.map((tag) => (
-						<Text key={tag} style={styles.tag}>
-							{tag}
-						</Text>
-					))}
-			</View>
+      {loading ? (
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={reviews}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 80 }}
+        />
+      )}
 
-			{/* 📅 작성일 */}
-			<Text style={styles.date}>{item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleString() : ''}</Text>
-
-			{/* 😊 감정 분석 결과 */}
-			{item.sentiment && <Text style={styles.sentiment}>감정 분석: {item.sentiment === 'positive' ? '👍 긍정' : item.sentiment === 'negative' ? '👎 부정' : '😐 중립'}</Text>}
-		</View>
-	);
-
-	if (loading) {
-		return <ActivityIndicator size='large' style={{ marginTop: 50 }} />;
-	}
-
-	return (
-		<View style={styles.container}>
-			<Text style={styles.title}>{type === 'received' ? '받은 리뷰' : '작성한 리뷰'}</Text>
-
-			{type === 'received' && averageRating !== null && (
-				<Text style={styles.average}>
-					🌟 평균 별점: {averageRating}점 ({reviewCount}개 리뷰)
-				</Text>
-			)}
-
-			<View style={styles.sortRow}>
-				<TouchableOpacity style={[styles.sortButton, sortType === 'latest' && styles.sortSelected]} onPress={() => setSortType('latest')}>
-					<Text style={styles.sortText}>최신순</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={[styles.sortButton, sortType === 'rating' && styles.sortSelected]} onPress={() => setSortType('rating')}>
-					<Text style={styles.sortText}>별점순</Text>
-				</TouchableOpacity>
-			</View>
-
-			{!reviews?.length && <Text style={{ textAlign: 'center', marginTop: 20, color: '#888' }}>작성된 리뷰가 없습니다.</Text>}
-
-			<FlatList data={getSortedReviews()} keyExtractor={(item) => item.id} renderItem={renderItem} contentContainerStyle={{ paddingBottom: 50 }} />
-			
-			<View style={styles.footer}>
-				<Footer navigation={navigation}/>
-			</View>
-
-		</View>
-	);
-}
+      <View style={styles.footer}>
+        <Footer navigation={navigation} />
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
-	container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-	title: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-	average: { fontSize: 16, fontWeight: '600', marginBottom: 12, color: '#333' },
-	sortRow: {
-		flexDirection: 'row',
-		justifyContent: 'flex-start',
-		marginBottom: 12,
-	},
-	sortButton: {
-		paddingVertical: 6,
-		paddingHorizontal: 12,
-		borderRadius: 20,
-		borderWidth: 1,
-		borderColor: '#ccc',
-		marginRight: 8,
-	},
-	sortSelected: {
-		backgroundColor: '#00bcd4',
-		borderColor: '#00bcd4',
-	},
-	sortText: {
-		color: '#000',
-		fontWeight: '500',
-	},
-	reviewCard: {
-		borderWidth: 1,
-		borderColor: '#ddd',
-		borderRadius: 10,
-		padding: 16,
-		marginBottom: 12,
-		backgroundColor: '#f9f9f9',
-	},
-	nickname: {
-		fontSize: 14,
-		fontWeight: 'bold',
-		marginBottom: 4,
-		color: '#444',
-	},
-	rentalItemName: {
-		fontSize: 13,
-		color: '#666',
-		marginBottom: 4,
-	},
-	rating: {
-		fontSize: 16,
-		fontWeight: '600',
-		color: '#FFD700',
-		marginBottom: 4,
-	},
-	content: {
-		fontSize: 14,
-		marginBottom: 6,
-		color: '#444',
-	},
-	summary: {
-		fontSize: 14,
-		fontWeight: '500',
-		color: '#333',
-		marginBottom: 6,
-	},
-	tags: {
-		flexDirection: 'row',
-		flexWrap: 'wrap',
-		marginBottom: 6,
-	},
-	tag: {
-		fontSize: 12,
-		color: '#00bcd4',
-		marginRight: 8,
-		backgroundColor: '#e0f7fa',
-		paddingHorizontal: 6,
-		paddingVertical: 2,
-		borderRadius: 10,
-	},
-	date: {
-		fontSize: 12,
-		color: '#999',
-		textAlign: 'right',
-	},
-	sentiment: {
-		fontSize: 13,
-		fontWeight: 'bold',
-		color: '#555',
-		marginTop: 6,
-	},
-	footer: {
-		position: 'absolute',
-		bottom: 0,
-		height: 83,
-		width: '109%',
-	},
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  average: {
+    fontSize: 15,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#555',
+  },
+  reviewCard: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 12,
+    backgroundColor: '#f9f9f9',
+  },
+  nickname: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#444',
+  },
+  rentalItemName: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  rating: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFD700',
+    marginBottom: 4,
+  },
+  content: {
+    fontSize: 14,
+    marginBottom: 6,
+    color: '#444',
+  },
+  summary: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 6,
+  },
+  tags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 6,
+  },
+  tag: {
+    fontSize: 12,
+    color: '#00bcd4',
+    marginRight: 8,
+    backgroundColor: '#e0f7fa',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  date: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'right',
+  },
+  sentiment: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    marginTop: 6,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    height: 83,
+    width: '109%',
+  },
 });

@@ -109,7 +109,7 @@ const MyPage = ({ navigation }) => {
          });
 
          try {
-            const response = await fetch('http://172.30.1.31:8082/predict', {
+            const response = await fetch('http://59.27.213.240:8082/predict', {
                method: 'POST',
                headers: {
                   'Content-Type': 'multipart/form-data',
@@ -150,7 +150,7 @@ const MyPage = ({ navigation }) => {
          });
 
          try {
-            const response = await fetch('http://172.30.1.31:8082/predict', {
+            const response = await fetch('http://59.27.213.240:8082/predict', {
                method: 'POST',
                headers: {
                   'Content-Type': 'multipart/form-data',
