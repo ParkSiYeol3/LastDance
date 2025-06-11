@@ -1,7 +1,0 @@
-ultralytics>=8.0.20
-opencv-python
-PyYAML
-numpy
-matplotlib
-
-pip install -r requirements.txt

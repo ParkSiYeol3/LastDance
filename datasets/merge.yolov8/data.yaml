@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['stain']
+
+roboflow:
+  workspace: gun-g6uwm
+  project: merge-8i0rx
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/gun-g6uwm/merge-8i0rx/dataset/1
