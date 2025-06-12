@@ -3,8 +3,8 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity }
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Footer from './Footer';
 
-const API_URL_NODEJS = 'http://59.27.213.240:3000';  // Node.js 서버 URL
-const API_URL_FLASK = 'http://59.27.213.240:8083';  // Flask 서버 URL
+const API_URL_NODEJS = 'http://192.168.0.6:3000';  // Node.js 서버 URL
+const API_URL_FLASK = 'http://192.168.0.6:8083';  // Flask 서버 URL
 
 export default function ReviewList() {
   const route = useRoute();

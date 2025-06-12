@@ -24,6 +24,6 @@ export const storage = getStorage(app);
 
 
 
-export const API_URL = 'http://59.27.213.240:3000';
+export const API_URL = 'http://192.168.0.6:3000';
 
 // API_URL을 PC IP로 변경

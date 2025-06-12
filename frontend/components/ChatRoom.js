@@ -293,7 +293,7 @@ const ChatRoom = ({ route, navigation }) => {
 				name: 'photo.jpg',
 			});
 
-			const response = await fetch('http://192.168.0.36:8082/predict', {
+			const response = await fetch('http://192.168.0.6:8082/predict', {
 				method: 'POST',
 				headers: { 'Content-Type': 'multipart/form-data' },
 				body: formData,
@@ -341,7 +341,7 @@ const ChatRoom = ({ route, navigation }) => {
 			});
 
 			try {
-				const response = await fetch('http://192.168.0.36:8082/predict', {
+				const response = await fetch('http://192.168.0.6:8082/predict', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'multipart/form-data',

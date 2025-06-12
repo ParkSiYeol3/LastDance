@@ -14,6 +14,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../firebase-config';
 import axios from 'axios';
 
+const API_URL_FLASK = 'http://192.168.0.6:8083'; // ✅ Flask 감정분석 서버 주소
+
 const StarRating = ({ rating, onChange }) => {
   const stars = [1, 2, 3, 4, 5];
   return (
@@ -69,27 +71,35 @@ export default function ReviewForm() {
       return;
     }
 
-    const payload = {
-      reviewerId,
-      targetUserId,
-      role: isSeller ? 'seller' : 'buyer',
-      rating,
-      summary,
-      content,
-      tags,
-      rentalItemId,
-    };
-
-    console.log('📦 후기 전송 데이터:', payload);
-
     try {
+      // ✅ 1. Flask 서버로 감정 분석 요청
+      const sentimentRes = await axios.post(`${API_URL_FLASK}/predict`, {
+        text: content,
+      });
+      const sentiment = sentimentRes.data.label || 'neutral';
+
+      // ✅ 2. 리뷰 저장 요청 (감정 결과 포함)
+      const payload = {
+        reviewerId,
+        targetUserId,
+        role: isSeller ? 'seller' : 'buyer',
+        rating,
+        summary,
+        content,
+        tags,
+        rentalItemId,
+        sentiment, // ✅ 감정 결과 추가
+      };
+
+      console.log('📦 후기 전송 데이터:', payload);
+
       const res = await axios.post(`${API_URL}/api/reviews`, payload);
 
       if (res.status === 201) {
         Alert.alert('후기 등록 완료', '', [
           {
             text: '확인',
-            onPress: () => navigation.goBack(), // ✅ 등록 후 이전 화면(채팅방)으로 이동
+            onPress: () => navigation.goBack(),
           },
         ]);
       } else {

@@ -4,9 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Progress from 'react-native-progress';
 import Footer from '../components/Footer';
 
-
-const API_URL = 'http://59.27.213.240:3000';
-
+const API_URL = 'http://192.168.0.6:3000';
 
 export default function AdminDashboard() {
 	const navigation = useNavigation();
@@ -28,9 +26,9 @@ export default function AdminDashboard() {
 
 	const renderItem = ({ item }) => {
 		const total = item.count || 1;
-		const pos = item.positive / total;
-		const neg = item.negative / total;
-		const neu = item.neutral / total;
+		const pos = item.positive || 0;
+		const neu = item.neutral || 0;
+		const neg = item.negative || 0;
 
 		return (
 			<View style={styles.card}>
@@ -38,12 +36,12 @@ export default function AdminDashboard() {
 					<Image source={{ uri: item.profileImage }} style={styles.avatar} />
 					<View>
 						<Text style={styles.nickname}>{item.nickname}</Text>
-						<Text>
-							👍 {item.positive} 👎 {item.negative} 😐 {item.neutral}
-						</Text>
+						<Text>👍 {pos}  😐 {neu}  👎 {neg}</Text>
 					</View>
 				</View>
-				<Progress.Bar progress={pos} color='green' width={null} unfilledColor='#eee' borderWidth={0} height={10} style={{ marginTop: 8 }} />
+				<Progress.Bar progress={pos / total} color="green" width={null} borderWidth={0} height={8} style={{ marginTop: 6 }} />
+				<Progress.Bar progress={neu / total} color="gray" width={null} borderWidth={0} height={8} style={{ marginTop: 4 }} />
+				<Progress.Bar progress={neg / total} color="red" width={null} borderWidth={0} height={8} style={{ marginTop: 4 }} />
 			</View>
 		);
 	};
@@ -55,7 +53,12 @@ export default function AdminDashboard() {
 	return (
 		<View style={styles.container}>
 			<Text style={styles.title}>판매자 리뷰 감정 통계</Text>
-			<FlatList data={data} keyExtractor={(item) => item.sellerId} renderItem={renderItem} contentContainerStyle={{ paddingBottom: 50 }} />
+			<FlatList
+				data={data}
+				keyExtractor={(item) => item.sellerId}
+				renderItem={renderItem}
+				contentContainerStyle={{ paddingBottom: 50 }}
+			/>
 			<View style={styles.footer}>
 				<Footer navigation={navigation} />
 			</View>

@@ -1,16 +1,20 @@
+const axios = require('axios');
 const admin = require('firebase-admin');
 const db = admin.firestore();
 
+const FLASK_URL = 'http://192.168.0.6:8083/predict'; // 또는 실제 서버 주소로 수정
+
+// 리뷰 저장 (감정 분석 포함)
 exports.addReview = async (req, res) => {
   const {
     reviewerId,
     targetUserId,
-    role,         // 'renter' or 'seller'
+    role,
     rating,
     summary,
     content,
     tags,
-    rentalItemId, // ✅ 반드시 포함되어야 함!
+    rentalItemId,
   } = req.body;
 
   if (!reviewerId || !targetUserId || !role || !rating || !content || !rentalItemId) {
@@ -18,6 +22,15 @@ exports.addReview = async (req, res) => {
   }
 
   try {
+    // Flask 감정 분석 요청
+    let sentiment = 'neutral';
+    try {
+      const flaskRes = await axios.post(FLASK_URL, { text: content });
+      sentiment = flaskRes.data?.label || 'neutral';
+    } catch (flaskErr) {
+      console.error('⚠️ Flask 감정 분석 실패:', flaskErr.message);
+    }
+
     const reviewData = {
       reviewerId,
       targetUserId,
@@ -27,10 +40,10 @@ exports.addReview = async (req, res) => {
       content,
       tags: tags || [],
       rentalItemId,
+      sentiment,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    // ✅ role 기반으로 buyerId / sellerId 필드 설정
     if (role === 'buyer') {
       reviewData.buyerId = targetUserId;
       reviewData.sellerId = reviewerId;
@@ -39,10 +52,9 @@ exports.addReview = async (req, res) => {
       reviewData.sellerId = targetUserId;
     }
 
-    // ✅ 리뷰 저장
     const docRef = await db.collection('reviews').add(reviewData);
 
-    // ✅ 리뷰 저장 후 평점 업데이트
+    // 평점 반영
     const itemRef = db.collection('items').doc(rentalItemId);
     const itemSnap = await itemRef.get();
 
@@ -50,7 +62,6 @@ exports.addReview = async (req, res) => {
       const itemData = itemSnap.data();
       const prevRating = itemData.rating || 0;
       const prevCount = itemData.ratingCount || 0;
-
       const newCount = prevCount + 1;
       const newAverage = ((prevRating * prevCount) + rating) / newCount;
 
@@ -60,70 +71,59 @@ exports.addReview = async (req, res) => {
       });
     }
 
-    res.status(201).json({ message: '리뷰가 저장되었고 평점이 반영되었습니다.', reviewId: docRef.id });
+    res.status(201).json({
+      message: '리뷰 저장 및 감정 분석 완료',
+      reviewId: docRef.id,
+      sentiment,
+    });
   } catch (err) {
     console.error('리뷰 저장 실패:', err);
-    res.status(500).json({ error: '리뷰 저장 중 오류가 발생했습니다.' });
+    res.status(500).json({ error: '리뷰 저장 중 오류' });
   }
 };
 
-// 내가 받은 리뷰 조회 
+// 받은 리뷰 조회
 exports.getReceivedReviews = async (req, res) => {
   const { userId } = req.params;
 
   try {
     const snapshot = await db.collection('reviews')
       .where('targetUserId', '==', userId)
-      // .orderBy('createdAt', 'desc') ← 주석 처리하여 오류 방지
       .get();
 
-    const reviews = await Promise.all(
-      snapshot.docs.map(async (doc) => {
-        const review = doc.data();
+    const reviews = await Promise.all(snapshot.docs.map(async (doc) => {
+      const review = doc.data();
 
-        // 👤 작성자 정보 가져오기
-        let reviewerProfile = {
-          nickname: '알 수 없음',
-          profileImage: null,
+      let reviewerProfile = { nickname: '알 수 없음', profileImage: null };
+      const userDoc = await db.collection('users').doc(review.reviewerId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        reviewerProfile = {
+          nickname: userData.nickname || '알 수 없음',
+          profileImage: userData.profileImage || null,
         };
-        if (review.reviewerId) {
-          const userDoc = await db.collection('users').doc(review.reviewerId).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            reviewerProfile = {
-              nickname: userData.nickname || '알 수 없음',
-              profileImage: userData.profileImage || null,
-            };
-          }
-        }
+      }
 
-        // 🧥 아이템 이름 가져오기
-        let rentalItemName = '';
-        if (review.rentalItemId) {
-          const itemDoc = await db.collection('items').doc(review.rentalItemId).get();
-          if (itemDoc.exists) {
-            rentalItemName = itemDoc.data().name || '';
-          }
-        }
+      let rentalItemName = '';
+      const itemDoc = await db.collection('items').doc(review.rentalItemId).get();
+      if (itemDoc.exists) rentalItemName = itemDoc.data().name || '';
 
-        return {
-          id: doc.id,
-          ...review,
-          reviewerProfile,
-          rentalItemName,
-        };
-      })
-    );
+      return {
+        id: doc.id,
+        ...review,
+        reviewerProfile,
+        rentalItemName,
+      };
+    }));
 
     res.json({ reviews });
   } catch (err) {
     console.error('받은 리뷰 조회 실패:', err);
-    res.status(500).json({ error: '리뷰 조회 중 오류 발생' });
+    res.status(500).json({ error: '리뷰 조회 오류' });
   }
 };
 
-
-// 내가 작성한 리뷰 조회 
+// 작성한 리뷰 조회
 exports.getWrittenReviews = async (req, res) => {
   const { userId } = req.params;
 
@@ -133,36 +133,29 @@ exports.getWrittenReviews = async (req, res) => {
       .orderBy('createdAt', 'desc')
       .get();
 
-    const reviews = await Promise.all(
-      snapshot.docs.map(async (doc) => {
-        const review = doc.data();
+    const reviews = await Promise.all(snapshot.docs.map(async (doc) => {
+      const review = doc.data();
+      let rentalItemName = '';
+      const itemDoc = await db.collection('items').doc(review.rentalItemId).get();
+      if (itemDoc.exists) rentalItemName = itemDoc.data().name || '';
 
-        // 🧥 대여 아이템 이름 가져오기
-        let rentalItemName = '';
-        if (review.rentalItemId) {
-          const itemDoc = await db.collection('items').doc(review.rentalItemId).get();
-          rentalItemName = itemDoc.exists ? itemDoc.data().name || '' : '';
-        }
-
-        return {
-          id: doc.id,
-          ...review,
-          rentalItemName, // ✅ 추가된 필드
-        };
-      })
-    );
+      return {
+        id: doc.id,
+        ...review,
+        rentalItemName,
+      };
+    }));
 
     res.json({ reviews });
   } catch (err) {
     console.error('작성한 리뷰 조회 실패:', err);
-    res.status(500).json({ error: '작성한 리뷰 조회 중 오류가 발생했습니다.' });
+    res.status(500).json({ error: '작성 리뷰 조회 오류' });
   }
 };
 
-// 평균 별점 계산
+// 평균 별점 조회
 exports.getAverageRating = async (req, res) => {
   const targetUserId = req.params.userId;
-  console.log('[평균 별점 요청]', targetUserId); //
 
   try {
     const snapshot = await db
@@ -180,12 +173,11 @@ exports.getAverageRating = async (req, res) => {
     res.json({ average: Math.round(average * 10) / 10, count: ratings.length });
   } catch (err) {
     console.error('평균 별점 계산 실패:', err);
-    res.status(500).json({ error: '평균 별점 조회 실패' });
+    res.status(500).json({ error: '평균 별점 조회 오류' });
   }
 };
 
-
-//리뷰 중복 작성 방지 
+// 중복 리뷰 확인
 exports.checkReviewExists = async (req, res) => {
   const { reviewerId, rentalItemId } = req.query;
 
@@ -200,10 +192,9 @@ exports.checkReviewExists = async (req, res) => {
       .limit(1)
       .get();
 
-    const exists = !snapshot.empty;
-    res.json({ exists });
+    res.json({ exists: !snapshot.empty });
   } catch (err) {
-    console.error('리뷰 존재 확인 실패:', err);
-    res.status(500).json({ error: '리뷰 존재 확인 중 오류 발생' });
+    console.error('중복 확인 실패:', err);
+    res.status(500).json({ error: '중복 리뷰 확인 오류' });
   }
 };

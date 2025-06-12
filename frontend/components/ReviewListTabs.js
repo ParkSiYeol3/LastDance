@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator }
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Footer from './Footer';
 
-const API_URL = 'http://59.27.213.240:3000';
+const API_URL = 'http://192.168.0.6:3000';
 
 const ReviewListTabs = () => {
   const route = useRoute();
