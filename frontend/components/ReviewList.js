@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Footer from './Footer';
 
@@ -17,24 +17,31 @@ export default function ReviewList() {
   const [loading, setLoading] = useState(true);
   const [averageRating, setAverageRating] = useState(null);
   const [reviewCount, setReviewCount] = useState(null);
-  const [sortType, setSortType] = useState('latest');
+  const [sentimentStats, setSentimentStats] = useState({ positive: 0, negative: 0, neutral: 0 });
 
-  // 리뷰 내용에 대한 감정 분석을 요청하는 함수
+  // 감정 분석 요청
   const fetchSentiment = async (content) => {
     try {
-      const res = await fetch(`${API_URL_FLASK}/predict`, {  // Flask 서버의 /predict 엔드포인트로 요청
+      const res = await fetch(`${API_URL_FLASK}/predict`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: content }),  // 리뷰 내용 텍스트를 서버로 전송
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: content }),
       });
       const json = await res.json();
-      return json.label;  // 반환된 감정 분석 결과(positive, negative, neutral)
+      return json.label;
     } catch (err) {
       console.error('감정 분석 실패:', err);
-      return 'neutral';  // 오류 발생 시 기본값 'neutral'
+      return 'neutral';
     }
+  };
+
+  // 감정 통계 계산
+  const calculateSentimentStats = (reviews) => {
+    const stats = { positive: 0, negative: 0, neutral: 0 };
+    reviews.forEach((r) => {
+      if (r.sentiment) stats[r.sentiment]++;
+    });
+    setSentimentStats(stats);
   };
 
   // 리뷰 데이터 가져오기
@@ -45,10 +52,11 @@ export default function ReviewList() {
       const reviewsWithSentiment = await Promise.all(
         json.reviews.map(async (review) => {
           const sentiment = await fetchSentiment(review.content);
-          return { ...review, sentiment };  // 리뷰에 감정 분석 결과 추가
+          return { ...review, sentiment };
         })
       );
       setReviews(reviewsWithSentiment);
+      calculateSentimentStats(reviewsWithSentiment);
     } catch (err) {
       console.error('리뷰 불러오기 실패:', err);
     } finally {
@@ -74,11 +82,10 @@ export default function ReviewList() {
     fetchAverage();
   }, []);
 
-  // 감정 분석에 따른 스타일
   const sentimentStyles = {
-    positive: { color: 'green' },  // 긍정은 초록색
-    negative: { color: 'red' },    // 부정은 빨간색
-    neutral: { color: 'gray' },    // 중립은 회색
+    positive: { color: 'green' },
+    negative: { color: 'red' },
+    neutral: { color: 'gray' },
   };
 
   const renderItem = ({ item }) => (
@@ -94,13 +101,11 @@ export default function ReviewList() {
         ))}
       </View>
       <Text style={styles.date}>{item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleString() : ''}</Text>
-
-      {/* 감정 분석 결과 */}
       {item.sentiment && (
         <Text style={[styles.sentiment, sentimentStyles[item.sentiment]]}>
           감정 분석: 
-          {item.sentiment === 'positive' ? '👍 긍정' : 
-           item.sentiment === 'negative' ? '👎 부정' : '😐 중립'}
+          {item.sentiment === 'positive' ? '👍 긍정' :
+            item.sentiment === 'negative' ? '👎 부정' : '😐 중립'}
         </Text>
       )}
     </View>
@@ -114,6 +119,15 @@ export default function ReviewList() {
         <Text style={styles.average}>
           ⭐ 평균 별점: {averageRating}점 ({reviewCount}개 리뷰)
         </Text>
+      )}
+
+      {!loading && (
+        <View style={{ marginBottom: 12 }}>
+          <Text style={{ fontSize: 16, fontWeight: '600' }}>🧠 감정 통계</Text>
+          <Text style={{ color: 'green' }}>👍 긍정: {sentimentStats.positive}</Text>
+          <Text style={{ color: 'red' }}>👎 부정: {sentimentStats.negative}</Text>
+          <Text style={{ color: 'gray' }}>😐 중립: {sentimentStats.neutral}</Text>
+        </View>
       )}
 
       {loading ? (
@@ -132,7 +146,7 @@ export default function ReviewList() {
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
